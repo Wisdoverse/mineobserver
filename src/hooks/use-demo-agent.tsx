@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -69,24 +69,50 @@ export function useDemoAgent() {
   const [intervals, setIntervals] = useState<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 连接 WebSocket
-  const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+  // 连接到 WebSocket（Promise 版本）
+  const connectWs = useCallback((): Promise<WebSocket> => {
+    return new Promise((resolve, reject) => {
+      // 关闭现有连接
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    wsRef.current = new WebSocket(`${protocol}//${window.location.host}/ws/agent`);
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws/agent`;
+      console.log('[Demo] Connecting to:', wsUrl);
+      
+      const ws = new WebSocket(wsUrl);
+      
+      const timeout = setTimeout(() => {
+        ws.close();
+        reject(new Error('Connection timeout'));
+      }, 5000);
 
-    wsRef.current.onopen = () => {
-      console.log('[Demo] WebSocket connected');
-      setIsConnected(true);
-    };
+      ws.onopen = () => {
+        clearTimeout(timeout);
+        console.log('[Demo] WebSocket connected');
+        setIsConnected(true);
+        wsRef.current = ws;
+        resolve(ws);
+      };
 
-    wsRef.current.onclose = () => {
-      console.log('[Demo] WebSocket closed');
-      wsRef.current = null;
-      setIsConnected(false);
-    };
+      ws.onerror = (error) => {
+        clearTimeout(timeout);
+        console.error('[Demo] WebSocket error:', error);
+        setIsConnected(false);
+        reject(error);
+      };
+
+      ws.onclose = () => {
+        clearTimeout(timeout);
+        console.log('[Demo] WebSocket closed');
+        setIsConnected(false);
+        wsRef.current = null;
+      };
+    });
   }, []);
 
   // 生成随机位置变化
@@ -101,25 +127,19 @@ export function useDemoAgent() {
   };
 
   // 启动演示 Agent
-  const startDemoAgent = useCallback((config: DemoAgentConfig) => {
-    connect();
+  const startDemoAgent = useCallback(async (config: DemoAgentConfig) => {
+    try {
+      // 连接 WebSocket
+      const ws = await connectWs();
+      console.log('[Demo] WebSocket ready, starting agent:', config.username);
 
-    // 生成 agentId（不含随机部分，确保一致性）
-    const timestamp = Date.now();
-    const agentId = `demo-${config.username}-${timestamp}`;
-    const initialPosition = { x: 0, y: 64, z: 0 };
-
-    // 等待 WebSocket 连接
-    const waitForConnection = () => {
-      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-        setTimeout(waitForConnection, 100);
-        return;
-      }
-
-      const ws = wsRef.current;
+      // 生成 agentId
+      const timestamp = Date.now();
+      const agentId = `demo-${config.username}-${timestamp}`;
+      const initialPosition = { x: 0, y: 64, z: 0 };
 
       // 发送注册消息
-      ws.send(JSON.stringify({
+      const registerMsg = {
         type: 'agent:register',
         payload: {
           agentId,
@@ -127,9 +147,14 @@ export function useDemoAgent() {
           serverHost: config.serverHost,
           serverPort: config.serverPort,
         },
-      }));
+      };
+      console.log('[Demo] Sending register:', JSON.stringify(registerMsg));
+      ws.send(JSON.stringify(registerMsg));
 
-      // 初始化状态 - 使用固定值避免 hydration 不匹配
+      // 等待一小段时间确保注册成功
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // 发送初始状态
       const initialStatus = {
         agentId,
         status: {
@@ -152,7 +177,7 @@ export function useDemoAgent() {
           },
           world: config.serverHost,
           dimension: 'overworld',
-          yaw: 180,  // 固定值
+          yaw: 180,
           pitch: 0,
           isOnGround: true,
           isSleeping: false,
@@ -161,11 +186,7 @@ export function useDemoAgent() {
           lastUpdated: timestamp,
         },
       };
-
-      ws.send(JSON.stringify({
-        type: 'agent:status:update',
-        payload: initialStatus,
-      }));
+      ws.send(JSON.stringify({ type: 'agent:status:update', payload: initialStatus }));
 
       // 发送初始世界快照
       ws.send(JSON.stringify({
@@ -187,12 +208,13 @@ export function useDemoAgent() {
       let currentPos = { ...initialPosition };
       let health = 20;
       let food = 18;
-      let yaw = 0;
+      let yaw = 180;
 
       const updateInterval = setInterval(() => {
-        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-
-        const wsCurrent = wsRef.current;
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+          console.log('[Demo] WebSocket not ready, skipping update');
+          return;
+        }
 
         // 更新位置
         if (Math.random() > 0.3) {
@@ -213,18 +235,38 @@ export function useDemoAgent() {
           food = Math.min(20, food + 1);
         }
 
-        wsCurrent.send(JSON.stringify({
+        // 发送状态更新
+        wsRef.current.send(JSON.stringify({
           type: 'agent:status:update',
           payload: {
             agentId,
             status: {
+              id: agentId,
+              username: config.username,
+              connected: true,
               position: currentPos,
               health,
+              maxHealth: 20,
               food,
+              saturation: Math.floor(food / 2),
+              gamemode: 'survival' as const,
+              inventory: DEMO_ITEMS,
+              equipment: {
+                head: { slot: -1, name: 'minecraft:diamond_helmet', displayName: '钻石头盔', count: 1 },
+                chest: { slot: -2, name: 'minecraft:diamond_chestplate', displayName: '钻石胸甲', count: 1 },
+                legs: { slot: -3, name: 'minecraft:diamond_leggings', displayName: '钻石护腿', count: 1 },
+                feet: { slot: -4, name: 'minecraft:diamond_boots', displayName: '钻石靴子', count: 1 },
+                mainhand: { slot: -1, name: 'minecraft:diamond_sword', displayName: '钻石剑', count: 1 },
+              },
+              world: config.serverHost,
+              dimension: 'overworld',
               yaw,
+              pitch: Math.random() * 30 - 15,
+              isOnGround: true,
+              isSleeping: false,
               isSprinting: Math.random() > 0.8,
-              isSneaking: Math.random() > 0.9,
-              isOnGround: Math.random() > 0.1,
+              isSneaking: false,
+              lastUpdated: Date.now(),
             },
           },
         }));
@@ -232,39 +274,13 @@ export function useDemoAgent() {
         // 随机发送事件
         if (Math.random() > 0.7) {
           const eventType = DEMO_EVENT_TYPES[Math.floor(Math.random() * DEMO_EVENT_TYPES.length)];
-          wsCurrent.send(JSON.stringify({
+          wsRef.current.send(JSON.stringify({
             type: 'agent:event',
             payload: {
               agentId,
               event: {
                 type: eventType.type,
-                description: eventType.description,
-                data: {},
-              },
-            },
-          }));
-        }
-
-        // 随机更新世界快照
-        if (Math.random() > 0.8) {
-          // 添加一些随机方块
-          const randomBlock = {
-            position: {
-              x: currentPos.x + Math.floor(Math.random() * 10) - 5,
-              y: currentPos.y + Math.floor(Math.random() * 5),
-              z: currentPos.z + Math.floor(Math.random() * 10) - 5,
-            },
-            type: ['stone', 'cobblestone', 'dirt', 'grass_block'][Math.floor(Math.random() * 4)],
-            name: '方块',
-          };
-
-          wsCurrent.send(JSON.stringify({
-            type: 'agent:world:snapshot',
-            payload: {
-              agentId,
-              snapshot: {
-                blocks: [...DEMO_BLOCKS.slice(0, 10), randomBlock],
-                entities: DEMO_ENTITIES,
+                message: eventType.description,
                 timestamp: Date.now(),
               },
             },
@@ -273,44 +289,43 @@ export function useDemoAgent() {
       }, 2000);
 
       setIntervals(prev => new Map(prev).set(agentId, updateInterval));
-    };
+      console.log('[Demo] Agent started:', config.username, 'ID:', agentId);
 
-    waitForConnection();
-  }, [connect]);
+    } catch (error) {
+      console.error('[Demo] Failed to start agent:', error);
+    }
+  }, [connectWs]);
 
-  // 停止演示 Agent
+  // 停止单个演示 Agent
   const stopDemoAgent = useCallback((agentId: string) => {
-    setIntervals(prev => {
-      const interval = prev.get(agentId);
-      if (interval) {
-        clearInterval(interval);
-      }
-      const next = new Map(prev);
-      next.delete(agentId);
-      return next;
-    });
+    const interval = intervals.get(agentId);
+    if (interval) {
+      clearInterval(interval);
+      setIntervals(prev => {
+        const next = new Map(prev);
+        next.delete(agentId);
+        return next;
+      });
+    }
     setAgentConfigs(prev => {
       const next = new Map(prev);
       next.delete(agentId);
       return next;
     });
-  }, []);
+    console.log('[Demo] Agent stopped:', agentId);
+  }, [intervals]);
 
   // 停止所有演示 Agent
   const stopAllDemoAgents = useCallback(() => {
-    setIntervals(prev => {
-      prev.forEach((interval) => clearInterval(interval));
-      return new Map();
-    });
+    intervals.forEach((interval) => clearInterval(interval));
+    setIntervals(new Map());
     setAgentConfigs(new Map());
-  }, []);
-
-  // 清理
-  useEffect(() => {
-    return () => {
-      intervals.forEach((interval) => clearInterval(interval));
-      wsRef.current?.close();
-    };
+    
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    console.log('[Demo] All agents stopped');
   }, [intervals]);
 
   return {
@@ -322,19 +337,17 @@ export function useDemoAgent() {
   };
 }
 
-interface DemoAgentDialogProps {
-  onStartDemo: (config: DemoAgentConfig) => void;
-}
-
-export function DemoAgentDialog({ onStartDemo }: DemoAgentDialogProps) {
+// 演示 Agent 添加对话框组件
+export function AddDemoAgentDialog() {
+  const { startDemoAgent, isConnected } = useDemoAgent();
   const [isOpen, setIsOpen] = useState(false);
   const [username, setUsername] = useState('');
   const [serverHost, setServerHost] = useState('localhost');
   const [serverPort, setServerPort] = useState('25565');
 
-  const handleSubmit = () => {
+  const handleAdd = () => {
     if (!username.trim()) return;
-    onStartDemo({
+    startDemoAgent({
       username: username.trim(),
       serverHost,
       serverPort: parseInt(serverPort, 10),
@@ -346,7 +359,7 @@ export function DemoAgentDialog({ onStartDemo }: DemoAgentDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button variant="default" size="sm" className="gap-2">
           <Plus className="w-4 h-4" />
           添加演示 Agent
         </Button>
@@ -355,7 +368,7 @@ export function DemoAgentDialog({ onStartDemo }: DemoAgentDialogProps) {
         <DialogHeader>
           <DialogTitle>添加演示 Agent</DialogTitle>
           <DialogDescription>
-            创建一个模拟的 Minecraft Agent 来演示观测台功能。
+            创建一个模拟的 Minecraft Agent，用于演示观测台功能。
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -363,7 +376,7 @@ export function DemoAgentDialog({ onStartDemo }: DemoAgentDialogProps) {
             <Label htmlFor="username">用户名</Label>
             <Input
               id="username"
-              placeholder="输入 Agent 用户名"
+              placeholder="Agent 用户名"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
@@ -393,7 +406,7 @@ export function DemoAgentDialog({ onStartDemo }: DemoAgentDialogProps) {
           <Button variant="outline" onClick={() => setIsOpen(false)}>
             取消
           </Button>
-          <Button onClick={handleSubmit} disabled={!username.trim()}>
+          <Button onClick={handleAdd} disabled={!username.trim() || !isConnected}>
             启动
           </Button>
         </DialogFooter>

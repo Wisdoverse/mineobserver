@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Activity, Users, Wifi, WifiOff, RefreshCw, Server, Pause, Trash2, Bot } from 'lucide-react';
 import { useAgentObserver } from '@/hooks/use-agent-observer';
-import { useDemoAgent, DemoAgentDialog } from '@/hooks/use-demo-agent';
+import { useDemoAgent, AddDemoAgentDialog } from '@/hooks/use-demo-agent';
 import { AgentCard } from '@/components/agent';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -114,7 +114,7 @@ export default function ObserverPage() {
 
               {/* 演示 Agent 控制 */}
               <div className="flex items-center gap-2">
-                <DemoAgentDialog onStartDemo={startDemoAgent} />
+                <AddDemoAgentDialog />
 
                 {demoAgentCount > 0 && (
                   <TooltipProvider>
@@ -183,7 +183,7 @@ export default function ObserverPage() {
             </p>
 
             <div className="flex gap-3 mb-8">
-              <DemoAgentDialog onStartDemo={startDemoAgent} />
+              <AddDemoAgentDialog />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
