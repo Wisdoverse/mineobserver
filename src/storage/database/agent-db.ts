@@ -207,12 +207,29 @@ export const agentEventDb = {
       return;
     }
     
-    // 删除不在保留列表中的事件（使用 PostgreSQL 函数）
-    const { error: rpcError } = await client.rpc('delete_events_except', {
-      p_agent_id: agentId,
-      p_keep_ids: keepIds,
-    });
-    if (rpcError) throw new Error(`清理旧事件失败: ${rpcError.message}`);
+    // 获取该 Agent 所有事件 ID，然后删除不在保留列表中的
+    const { data: allEvents, error: allError } = await client
+      .from('agent_events')
+      .select('id')
+      .eq('agent_id', agentId);
+    
+    if (allError) throw new Error(`获取所有事件失败: ${allError.message}`);
+    
+    const idsToDelete = (allEvents as { id: number }[])
+      .map((e) => e.id)
+      .filter((id) => !keepIds.includes(id));
+    
+    if (idsToDelete.length === 0) return;
+    
+    // 分批删除（每批最多 100 个 ID，避免 URL 过长）
+    for (let i = 0; i < idsToDelete.length; i += 100) {
+      const batch = idsToDelete.slice(i, i + 100);
+      const { error } = await client
+        .from('agent_events')
+        .delete()
+        .in('id', batch);
+      if (error) throw new Error(`清理旧事件失败: ${error.message}`);
+    }
   },
 };
 
@@ -287,11 +304,28 @@ export const agentWorldSnapshotDb = {
     
     const keepIds = snapshotsToKeep.map((s: { id: number }) => s.id);
     
-    // 删除不在保留列表中的快照（使用 PostgreSQL 函数）
-    const { error: rpcError } = await client.rpc('delete_snapshots_except', {
-      p_agent_id: agentId,
-      p_keep_ids: keepIds,
-    });
-    if (rpcError) throw new Error(`清理旧快照失败: ${rpcError.message}`);
+    // 获取该 Agent 所有快照 ID，然后删除不在保留列表中的
+    const { data: allSnapshots, error: allError } = await client
+      .from('agent_world_snapshots')
+      .select('id')
+      .eq('agent_id', agentId);
+    
+    if (allError) throw new Error(`获取所有快照失败: ${allError.message}`);
+    
+    const idsToDelete = (allSnapshots as { id: number }[])
+      .map((s) => s.id)
+      .filter((id) => !keepIds.includes(id));
+    
+    if (idsToDelete.length === 0) return;
+    
+    // 分批删除
+    for (let i = 0; i < idsToDelete.length; i += 100) {
+      const batch = idsToDelete.slice(i, i + 100);
+      const { error } = await client
+        .from('agent_world_snapshots')
+        .delete()
+        .in('id', batch);
+      if (error) throw new Error(`清理旧快照失败: ${error.message}`);
+    }
   },
 };

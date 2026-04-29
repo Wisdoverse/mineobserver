@@ -99,22 +99,24 @@ export function useDemoAgent() {
   const [intervals, setIntervals] = useState<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const [isConnected, setIsConnected] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const wsRef = useRef<WebSocket | null>(null);
+  // 每个 Agent 维护独立的 WebSocket 连接
+  const agentWsMap = useRef<Map<string, WebSocket>>(new Map());
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoRestoreDoneRef = useRef(false);
 
-  // 连接到 WebSocket（Promise 版本）
-  const connectWs = useCallback((): Promise<WebSocket> => {
+  // 为单个 Agent 创建独立的 WebSocket 连接
+  const connectAgentWs = useCallback((agentId: string): Promise<WebSocket> => {
     return new Promise((resolve, reject) => {
-      // 关闭现有连接
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
+      // 关闭该 Agent 的现有连接
+      const existing = agentWsMap.current.get(agentId);
+      if (existing) {
+        existing.close();
+        agentWsMap.current.delete(agentId);
       }
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${protocol}//${window.location.host}/ws/agent`;
-      console.log('[Demo] Connecting to:', wsUrl);
+      console.log('[Demo] Connecting to:', wsUrl, 'for agent:', agentId);
       
       const ws = new WebSocket(wsUrl);
       
@@ -125,24 +127,27 @@ export function useDemoAgent() {
 
       ws.onopen = () => {
         clearTimeout(timeout);
-        console.log('[Demo] WebSocket connected');
+        console.log('[Demo] WebSocket connected for agent:', agentId);
         setIsConnected(true);
-        wsRef.current = ws;
+        agentWsMap.current.set(agentId, ws);
         resolve(ws);
       };
 
       ws.onerror = (error) => {
         clearTimeout(timeout);
-        console.error('[Demo] WebSocket error:', error);
+        console.error('[Demo] WebSocket error for agent:', agentId, error);
         setIsConnected(false);
         reject(error);
       };
 
       ws.onclose = () => {
         clearTimeout(timeout);
-        console.log('[Demo] WebSocket closed');
-        setIsConnected(false);
-        wsRef.current = null;
+        console.log('[Demo] WebSocket closed for agent:', agentId);
+        agentWsMap.current.delete(agentId);
+        // 检查是否还有活跃连接
+        if (agentWsMap.current.size === 0) {
+          setIsConnected(false);
+        }
       };
     });
   }, []);
@@ -161,12 +166,11 @@ export function useDemoAgent() {
   // 启动演示 Agent（支持传入已有的 agentId 用于自动恢复）
   const startDemoAgent = useCallback(async (config: DemoAgentConfig, existingAgentId?: string) => {
     try {
-      // 连接 WebSocket
-      const ws = await connectWs();
+      // 为该 Agent 创建独立的 WebSocket 连接
+      const agentId = existingAgentId || `demo-${config.username}`;
+      const ws = await connectAgentWs(agentId);
       console.log('[Demo] WebSocket ready, starting agent:', config.username);
 
-      // 生成 agentId：基于用户名固定生成，确保同一用户名始终对应同一 ID
-      const agentId = existingAgentId || `demo-${config.username}`;
       const initialPosition = { x: 0, y: 64, z: 0 };
 
       // 发送注册消息
@@ -250,8 +254,9 @@ export function useDemoAgent() {
       let yaw = 180;
 
       const updateInterval = setInterval(() => {
-        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-          console.log('[Demo] WebSocket not ready, skipping update');
+        const currentWs = agentWsMap.current.get(agentId);
+        if (!currentWs || currentWs.readyState !== WebSocket.OPEN) {
+          console.log('[Demo] WebSocket not ready for agent:', agentId);
           return;
         }
 
@@ -275,7 +280,7 @@ export function useDemoAgent() {
         }
 
         // 发送状态更新
-        wsRef.current.send(JSON.stringify({
+        currentWs.send(JSON.stringify({
           type: 'agent:status:update',
           payload: {
             agentId,
@@ -313,7 +318,7 @@ export function useDemoAgent() {
         // 随机发送事件
         if (Math.random() > 0.7) {
           const eventType = DEMO_EVENT_TYPES[Math.floor(Math.random() * DEMO_EVENT_TYPES.length)];
-          wsRef.current.send(JSON.stringify({
+          currentWs.send(JSON.stringify({
             type: 'agent:event',
             payload: {
               agentId,
@@ -333,7 +338,7 @@ export function useDemoAgent() {
     } catch (error) {
       console.error('[Demo] Failed to start agent:', error);
     }
-  }, [connectWs]);
+  }, [connectAgentWs]);
 
   // 组件挂载时连接 WebSocket 并自动恢复保存的 Agent
   useEffect(() => {
@@ -344,26 +349,21 @@ export function useDemoAgent() {
       setAgentConfigs(savedAgents);
     }
     
-    // 连接 WebSocket
-    connectWs().then(() => {
-      // WebSocket 连接成功后，自动恢复保存的 Agent
-      if (savedAgents.size > 0 && !autoRestoreDoneRef.current) {
-        autoRestoreDoneRef.current = true;
-        setIsInitialized(true);
-        
-        // 延迟恢复以确保 WebSocket 完全就绪
-        setTimeout(() => {
-          savedAgents.forEach((config, agentId) => {
-            console.log('[Demo] Auto-restoring agent:', config.username);
-            startDemoAgent(config, agentId).catch(err => {
-              console.error('[Demo] Auto-restore failed for:', config.username, err);
-            });
+    // 自动恢复保存的 Agent（不再需要预先连接 WebSocket，每个 Agent 有独立连接）
+    if (savedAgents.size > 0 && !autoRestoreDoneRef.current) {
+      autoRestoreDoneRef.current = true;
+      setIsInitialized(true);
+      
+      // 延迟恢复以确保页面完全加载
+      setTimeout(() => {
+        savedAgents.forEach((config, agentId) => {
+          console.log('[Demo] Auto-restoring agent:', config.username);
+          startDemoAgent(config, agentId).catch(err => {
+            console.error('[Demo] Auto-restore failed for:', config.username, err);
           });
-        }, 1000);
-      }
-    }).catch(err => {
-      console.error('[Demo] Initial connection failed:', err);
-    });
+        });
+      }, 1000);
+    }
   }, []);
 
   // 暂停单个演示 Agent（仅标记离线，保留配置）
@@ -376,6 +376,12 @@ export function useDemoAgent() {
         next.delete(agentId);
         return next;
       });
+    }
+    // 关闭该 Agent 的 WebSocket 连接（服务端会标记离线）
+    const ws = agentWsMap.current.get(agentId);
+    if (ws) {
+      ws.close();
+      agentWsMap.current.delete(agentId);
     }
     // 仅标记暂停时间，不删除配置
     setAgentConfigs(prev => {
@@ -420,6 +426,12 @@ export function useDemoAgent() {
         return next;
       });
     }
+    // 关闭该 Agent 的 WebSocket 连接
+    const ws = agentWsMap.current.get(agentId);
+    if (ws) {
+      ws.close();
+      agentWsMap.current.delete(agentId);
+    }
     setAgentConfigs(prev => {
       const next = new Map(prev);
       next.delete(agentId);
@@ -436,10 +448,9 @@ export function useDemoAgent() {
     setAgentConfigs(new Map());
     localStorage.removeItem(DEMO_AGENTS_STORAGE_KEY);
     
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
+    // 关闭所有 Agent 的 WebSocket 连接
+    agentWsMap.current.forEach((ws) => ws.close());
+    agentWsMap.current.clear();
     console.log('[Demo] All agents stopped');
   }, [intervals]);
 
