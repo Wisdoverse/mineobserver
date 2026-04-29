@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, Users, Wifi, WifiOff, ChevronLeft, Play, Plus, MapPin, Heart, Utensils, Compass, Copy, Check, Globe, Link2 } from 'lucide-react';
+import { Bot, Users, Wifi, WifiOff, ChevronLeft, Play, ChevronDown, Pause, MapPin, Heart, Utensils, Compass, Copy, Check, Globe, Link2 } from 'lucide-react';
 import { useAgentObserver } from '@/hooks/use-agent-observer';
 import { useDemoAgent, AddDemoAgentDialog } from '@/hooks/use-demo-agent';
 import { AgentCard } from '@/components/agent/agent-card';
@@ -11,12 +11,12 @@ import { MiniMap } from '@/components/agent/mini-map';
 import type { AgentStatus, WorldSnapshot } from '@/lib/types/agent';
 import { InventoryGrid } from '@/components/agent/inventory-grid';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export default function ObserverPage() {
   const [viewMode, setViewMode] = useState<'landing' | 'list' | 'detail'>('landing');
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [disconnectConfirm, setDisconnectConfirm] = useState<{ open: boolean; agentId: string | null; username: string | null }>({ open: false, agentId: null, username: null });
 
   const { agents, events, worldSnapshots, isConnected } = useAgentObserver();
   const { activeAgents, startDemoAgent, pauseDemoAgent, resumeDemoAgent, stopDemoAgent } = useDemoAgent();
@@ -263,6 +263,60 @@ export default function ObserverPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <AddDemoAgentDialog />
+                  {/* 连接管理下拉菜单 */}
+                  {agentCount > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Wifi className="w-4 h-4" />
+                          管理连接
+                          <ChevronDown className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>连接管理</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {/* 显示所有演示 Agent，可断开或重连 */}
+                        {Array.from(activeAgents.entries()).map(([agentId, config]) => (
+                          <DropdownMenuItem key={agentId} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${config.pausedAt ? 'bg-stone-400' : 'bg-emerald-500 animate-pulse'}`} />
+                              <span>{config.username}</span>
+                            </div>
+                            {config.pausedAt ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-emerald-600"
+                                onClick={() => resumeDemoAgent(agentId)}
+                              >
+                                重连
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-orange-500"
+                                onClick={() => pauseDemoAgent(agentId)}
+                              >
+                                断开
+                              </Button>
+                            )}
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-red-500 cursor-pointer"
+                          onClick={() => {
+                            Array.from(activeAgents.keys()).forEach(agentId => pauseDemoAgent(agentId));
+                          }}
+                        >
+                          <Pause className="w-4 h-4 mr-2" />
+                          全部断开
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
               </div>
             </div>
@@ -318,28 +372,13 @@ export default function ObserverPage() {
                     </div>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDisconnectConfirm({ open: true, agentId: selectedAgentId, username: selectedAgent?.username || null })}
-                  className="text-orange-500 border-orange-200 hover:bg-orange-50"
-                >
-                  标记离线
-                </Button>
-                {/* 重新连接按钮 - 仅对已暂停的演示 Agent 显示 */}
-                {selectedAgentId && activeAgents.get(selectedAgentId)?.pausedAt && (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => {
-                      resumeDemoAgent(selectedAgentId!);
-                    }}
-                    className="bg-emerald-500 hover:bg-emerald-600"
-                  >
-                    <Play className="w-4 h-4 mr-1" />
-                    重新连接
-                  </Button>
-                )}
+                {/* 连接状态指示 - 仅展示 */}
+                <div className="flex items-center gap-2 text-sm">
+                  <span className={`w-2 h-2 rounded-full ${selectedAgentId && activeAgents.get(selectedAgentId)?.pausedAt ? 'bg-stone-400' : 'bg-emerald-500 animate-pulse'}`} />
+                  <span className="text-stone-500">
+                    {selectedAgentId && activeAgents.get(selectedAgentId)?.pausedAt ? '已断开' : '已连接'}
+                  </span>
+                </div>
               </div>
             </div>
           </header>
@@ -491,38 +530,6 @@ export default function ObserverPage() {
         </div>
       )}
 
-      {/* 标记离线确认对话框 */}
-      <AlertDialog open={disconnectConfirm.open} onOpenChange={(open) => setDisconnectConfirm((prev) => ({ ...prev, open }))}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认标记离线</AlertDialogTitle>
-            <AlertDialogDescription>
-              确定要将 <span className="font-semibold text-foreground">{disconnectConfirm.username}</span> 标记为离线吗？
-              <span className="block mt-2 text-stone-600">
-                配置将被保留，后续可以重新连接。
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (disconnectConfirm.agentId) {
-                  pauseDemoAgent(disconnectConfirm.agentId);
-                  // 退回到列表页
-                  if (viewMode === 'detail') {
-                    setViewMode('list');
-                    setSelectedAgentId(null);
-                  }
-                }
-              }}
-              className="bg-orange-500 hover:bg-orange-600"
-            >
-              确认离线
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
