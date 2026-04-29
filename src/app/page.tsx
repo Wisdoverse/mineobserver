@@ -1,19 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Activity, Users, Wifi, WifiOff, RefreshCw, Server, Pause, Trash2, Bot } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Activity, Users, Wifi, WifiOff, RefreshCw, Server, Pause, Trash2, Bot, ArrowLeft, MapPin, Heart, Utensils, Backpack, Map, Clock, Move, Eye } from 'lucide-react';
 import { useAgentObserver } from '@/hooks/use-agent-observer';
 import { useDemoAgent, AddDemoAgentDialog } from '@/hooks/use-demo-agent';
-import { AgentCard } from '@/components/agent';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,10 +25,282 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
+import type { AgentStatus, AgentEvent, WorldSnapshot } from '@/lib/types/agent';
+
+function getEventEmoji(type: string): string {
+  const emojiMap: Record<string, string> = {
+    move: '🚶',
+    jump: '🦘',
+    attack: '⚔️',
+    damage: '💔',
+    chat: '💬',
+    block_break: '⛏️',
+    block_place: '🧱',
+    item_pickup: '📦',
+    item_drop: '📤',
+    death: '💀',
+    respawn: '✨',
+    login: '🔌',
+    logout: '👋',
+    fish: '🎣',
+    sleep: '😴',
+    wake: '☀️',
+  };
+  return emojiMap[type] || '📌';
+}
+
+function AgentCardView({ agent, events, worldSnapshot, onClick, onStop }: {
+  agent: AgentStatus;
+  events: AgentEvent[];
+  worldSnapshot?: WorldSnapshot;
+  onClick: () => void;
+  onStop?: () => void;
+}) {
+  const recentEvents = events.slice(-3).reverse();
+  
+  return (
+    <Card 
+      className="cursor-pointer hover:shadow-lg transition-all hover:border-primary/50 hover:-translate-y-0.5"
+      onClick={onClick}
+    >
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bot className="w-5 h-5" />
+            <CardTitle className="text-lg">{agent.username}</CardTitle>
+          </div>
+          <Badge variant={agent.connected ? 'default' : 'destructive'}>
+            {agent.connected ? '在线' : '离线'}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <MapPin className="w-3 h-3" />
+          <span className="font-mono">
+            {agent.position.x}, {agent.position.y}, {agent.position.z}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+
+
+        {/* 最近事件 */}
+        {recentEvents.length > 0 && (
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="w-3 h-3" />
+              <span>最近活动</span>
+            </div>
+            {recentEvents.map((event) => (
+              <div key={event.id} className="flex items-center gap-2 text-xs">
+                <span>{getEventEmoji(event.type)}</span>
+                <span className="truncate flex-1">{event.description}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 操作按钮 */}
+        <div className="flex items-center gap-2 pt-2 border-t">
+          <Button variant="outline" size="sm" className="flex-1 gap-1">
+            <Eye className="w-3 h-3" />
+            查看详情
+          </Button>
+          {agent.id.startsWith('demo-') && onStop && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" className="text-destructive" onClick={(e) => { e.stopPropagation(); onStop(); }}>
+                    <Pause className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>停止演示</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AgentDetailView({ agent, events, worldSnapshot, onBack }: {
+  agent: AgentStatus;
+  events: AgentEvent[];
+  worldSnapshot?: WorldSnapshot;
+  onBack: () => void;
+}) {
+  const recentEvents = events.slice(-20).reverse();
+  
+  return (
+    <div className="space-y-6">
+      {/* 返回按钮 */}
+      <Button variant="ghost" onClick={onBack} className="gap-2">
+        <ArrowLeft className="w-4 h-4" />
+        返回列表
+      </Button>
+
+      {/* Agent 信息头部 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-primary/10 rounded-full">
+            <Bot className="w-8 h-8 text-primary" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold">{agent.username}</h2>
+              {agent.id.startsWith('demo-') && (
+                <Badge variant="outline">
+                  <Bot className="w-3 h-3 mr-1" />
+                  演示
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground font-mono">{agent.id}</p>
+          </div>
+        </div>
+        <Badge variant={agent.connected ? 'default' : 'destructive'} className="text-sm px-3 py-1">
+          {agent.connected ? '在线' : '离线'}
+        </Badge>
+      </div>
+
+      {/* 状态卡片网格 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="p-3 pb-1">
+            <CardTitle className="text-sm flex items-center gap-1">
+              <MapPin className="w-4 h-4" /> 坐标
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <div className="font-mono text-sm space-y-0.5">
+              <div>X: {agent.position.x}</div>
+              <div>Y: {agent.position.y}</div>
+              <div>Z: {agent.position.z}</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="p-3 pb-1">
+            <CardTitle className="text-sm flex items-center gap-1">
+              <Eye className="w-4 h-4" /> 视角
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <div className="font-mono text-sm">
+              <div>Yaw: {agent.yaw.toFixed(1)}°</div>
+              <div>Pitch: {agent.pitch.toFixed(1)}°</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="p-3 pb-1">
+            <CardTitle className="text-sm flex items-center gap-1">
+              <Activity className="w-4 h-4" /> 状态
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <div className="font-mono text-sm capitalize">
+              <div>{agent.gamemode}</div>
+              <div className="text-muted-foreground">{agent.dimension}</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="p-3 pb-1">
+            <CardTitle className="text-sm flex items-center gap-1">
+              <Move className="w-4 h-4" /> 速度
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <div className="font-mono text-sm">
+              {agent.velocity
+                ? `${agent.velocity.x.toFixed(2)}, ${agent.velocity.y.toFixed(2)}, ${agent.velocity.z.toFixed(2)}`
+                : 'N/A'}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 生命值和饥饿值 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="p-3 pb-1">
+            <CardTitle className="text-sm flex items-center gap-1">
+              <Heart className="w-4 h-4 text-red-500" /> 生命值
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <div className="flex items-center gap-3">
+              <Progress value={(agent.health / agent.maxHealth) * 100} className="h-3 flex-1" />
+              <span className="font-mono text-sm">{agent.health} / {agent.maxHealth}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="p-3 pb-1">
+            <CardTitle className="text-sm flex items-center gap-1">
+              <Utensils className="w-4 h-4 text-orange-500" /> 饥饿值
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <div className="flex items-center gap-3">
+              <Progress value={(agent.food / 20) * 100} className="h-3 flex-1" />
+              <span className="font-mono text-sm">{agent.food} / 20</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 事件日志 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="w-5 h-5" /> 事件日志
+          </CardTitle>
+          <CardDescription>Agent 的最近活动记录</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {recentEvents.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                暂无事件记录
+              </p>
+            ) : (
+              recentEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <div className="text-2xl">{getEventEmoji(event.type)}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline" className="text-xs">
+                        {event.type}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(event.timestamp).toLocaleString('zh-CN')}
+                      </span>
+                    </div>
+                    <p className="text-sm mt-1">{event.description}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function ObserverPage() {
   const { agents, events, worldSnapshots, isConnected, lastUpdate } = useAgentObserver();
-  const { activeAgents, startDemoAgent, stopDemoAgent, stopAllDemoAgents } = useDemoAgent();
+  const { activeAgents, stopDemoAgent, stopAllDemoAgents } = useDemoAgent();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [wsHost, setWsHost] = useState<string>('');
@@ -49,12 +321,13 @@ export default function ObserverPage() {
 
   const timeSinceUpdate = lastUpdate > 0 ? Math.round((currentTime - lastUpdate) / 1000) : 0;
 
-  // 自动选择第一个 Agent
-  useEffect(() => {
-    if (agentsList.length > 0 && !selectedAgentId) {
-      setSelectedAgentId(agentsList[0].id);
-    }
-  }, [agentsList, selectedAgentId]);
+  const handleAgentClick = useCallback((agentId: string) => {
+    setSelectedAgentId(agentId);
+  }, []);
+
+  const handleBack = useCallback(() => {
+    setSelectedAgentId(null);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -117,36 +390,27 @@ export default function ObserverPage() {
                 <AddDemoAgentDialog />
 
                 {demoAgentCount > 0 && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="icon" className="text-destructive">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>停止所有演示 Agent</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                这将断开所有正在运行的演示 Agent 连接。
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>取消</AlertDialogCancel>
-                              <AlertDialogAction onClick={stopAllDemoAgents}>
-                                确认停止
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>停止所有演示 Agent</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="icon" className="text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>停止所有演示 Agent</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          这将断开所有正在运行的演示 Agent 连接。
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction onClick={stopAllDemoAgents}>
+                          确认停止
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
               </div>
 
@@ -155,7 +419,7 @@ export default function ObserverPage() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="outline" size="icon" onClick={() => window.location.reload()}>
-                      <RefreshCw className={`w-4 h-4`} />
+                      <RefreshCw className="w-4 h-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -171,6 +435,7 @@ export default function ObserverPage() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         {agentsList.length === 0 ? (
+          /* 空状态 */
           <div className="flex flex-col items-center justify-center py-20">
             <div className="p-6 bg-muted rounded-full mb-6">
               <Server className="w-12 h-12 text-muted-foreground" />
@@ -236,206 +501,40 @@ export default function ObserverPage() {
               </Card>
             </div>
           </div>
+        ) : selectedAgent ? (
+          /* 详情视图 */
+          <AgentDetailView
+            agent={selectedAgent}
+            events={selectedEvents}
+            worldSnapshot={worldSnapshots.get(selectedAgentId!)}
+            onBack={handleBack}
+          />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Agent 列表 */}
-            <div className="lg:col-span-1 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Agent 列表</h2>
-                <Badge variant="secondary">{agentsList.length}</Badge>
-              </div>
-              <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
-                {agentsList.map((agent) => (
-                  <div key={agent.id} className="relative">
-                    <AgentCard
-                      agent={agent}
-                      events={events.get(agent.id) || []}
-                      worldSnapshot={worldSnapshots.get(agent.id)}
-                      isSelected={selectedAgentId === agent.id}
-                      onClick={() => setSelectedAgentId(agent.id)}
-                    />
-                    {agent.id.startsWith('demo-') && (
-                      <div className="absolute top-2 right-2">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  stopDemoAgent(agent.id);
-                                }}
-                              >
-                                <Pause className="w-3 h-3" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>停止演示</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+          /* 卡片网格视图 */
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <Backpack className="w-5 h-5" />
+                Agent 列表
+              </h2>
+              <Badge variant="secondary">{agentsList.length} 个在线</Badge>
             </div>
-
-            {/* 选中 Agent 详情 */}
-            <div className="lg:col-span-2">
-              {selectedAgent ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-lg font-semibold">{selectedAgent.username}</h2>
-                        {selectedAgent.id.startsWith('demo-') && (
-                          <Badge variant="outline" className="text-xs">
-                            <Bot className="w-3 h-3 mr-1" />
-                            演示
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Agent ID: {selectedAgent.id}
-                      </p>
-                    </div>
-                    <Badge variant={selectedAgent.connected ? 'default' : 'destructive'}>
-                      {selectedAgent.connected ? '在线' : '离线'}
-                    </Badge>
-                  </div>
-
-                  {/* 详细状态卡片 */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Card>
-                      <CardHeader className="p-3">
-                        <CardTitle className="text-sm">坐标</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-3 pt-0">
-                        <p className="font-mono text-sm">
-                          X: {selectedAgent.position.x}
-                          <br />
-                          Y: {selectedAgent.position.y}
-                          <br />
-                          Z: {selectedAgent.position.z}
-                        </p>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="p-3">
-                        <CardTitle className="text-sm">视角</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-3 pt-0">
-                        <p className="font-mono text-sm">
-                          Yaw: {selectedAgent.yaw.toFixed(1)}°
-                          <br />
-                          Pitch: {selectedAgent.pitch.toFixed(1)}°
-                        </p>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="p-3">
-                        <CardTitle className="text-sm">状态</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-3 pt-0">
-                        <p className="font-mono text-sm capitalize">
-                          {selectedAgent.gamemode}
-                          <br />
-                          维度: {selectedAgent.dimension}
-                        </p>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="p-3">
-                        <CardTitle className="text-sm">速度</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-3 pt-0">
-                        <p className="font-mono text-sm">
-                          {selectedAgent.velocity
-                            ? `${selectedAgent.velocity.x.toFixed(2)}, ${selectedAgent.velocity.y.toFixed(2)}, ${selectedAgent.velocity.z.toFixed(2)}`
-                            : 'N/A'}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* 完整事件日志 */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>事件日志</CardTitle>
-                      <CardDescription>Agent 的最近活动记录</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 max-h-96 overflow-y-auto">
-                        {selectedEvents.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-4">
-                            暂无事件记录
-                          </p>
-                        ) : (
-                          selectedEvents.map((event) => (
-                            <div
-                              key={event.id}
-                              className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg"
-                            >
-                              <div className="text-2xl">
-                                {getEventEmoji(event.type)}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between">
-                                  <Badge variant="outline" className="text-xs">
-                                    {event.type}
-                                  </Badge>
-                                  <span className="text-xs text-muted-foreground">
-                                    {new Date(event.timestamp).toLocaleString('zh-CN')}
-                                  </span>
-                                </div>
-                                <p className="text-sm mt-1">{event.description}</p>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-[400px] bg-muted/50 rounded-lg">
-                  <Users className="w-12 h-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">点击左侧 Agent 卡片查看详情</p>
-                </div>
-              )}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {agentsList.map((agent) => (
+                <AgentCardView
+                  key={agent.id}
+                  agent={agent}
+                  events={events.get(agent.id) || []}
+                  worldSnapshot={worldSnapshots.get(agent.id)}
+                  onClick={() => handleAgentClick(agent.id)}
+                  onStop={agent.id.startsWith('demo-') ? () => stopDemoAgent(agent.id) : undefined}
+                />
+              ))}
             </div>
           </div>
         )}
       </main>
     </div>
   );
-}
-
-function getEventEmoji(type: string): string {
-  const emojiMap: Record<string, string> = {
-    connected: '🔗',
-    disconnected: '❌',
-    moved: '🚶',
-    jumped: '🦘',
-    attacked: '⚔️',
-    damaged: '💔',
-    died: '💀',
-    chat_sent: '📤',
-    chat_received: '📨',
-    block_broken: '⛏️',
-    block_placed: '🧱',
-    item_picked_up: '📥',
-    item_dropped: '📤',
-    item_used: '✋',
-    inventory_changed: '🎒',
-    world_changed: '🌍',
-    respawned: '✨',
-  };
-  return emojiMap[type] || '📌';
 }
