@@ -1,101 +1,100 @@
-// Agent WebSocket 处理器 - /ws/agent 端点
-
 import { WebSocketServer, WebSocket } from 'ws';
-import { agentStateManager, createAgentEvent, formatPosition } from './agent-state';
+import { agentStateManager } from './agent-state';
 import type {
-  WsMessage,
   AgentRegisterPayload,
   StatusUpdatePayload,
   EventPayload,
   WorldSnapshotPayload,
+  VisionPayload,
+  BuildProgressPayload,
+  SubscribePayload,
+  TeamUpdatePayload,
+  ChatPayload,
+  TradePayload,
+  WsMessage,
+  AgentStatus,
+  EventType,
 } from '@/lib/types/agent';
+import { agentDb } from '@/storage/database/agent-db';
+import { uploadVisionImage } from '@/storage/vision-storage';
 
-// 广播给所有连接的客户端（观测者）
+// Agent 客户端映射 (agentId -> WebSocket)
+const agentClients = new Map<string, WebSocket>();
+// Observer 客户端集合
 const observerClients = new Set<WebSocket>();
 
-// Agent 连接（用于上报状态）
-const agentClients = new Map<string, WebSocket>();
+// 辅助：创建事件对象
+function createAgentEvent(
+  agentId: string,
+  type: EventType,
+  description: string,
+  data?: Record<string, unknown>
+) {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    agentId,
+    type,
+    timestamp: Date.now(),
+    description,
+    data: data || {},
+  };
+}
+
+// 辅助：格式化坐标
+function formatPosition(pos: { x: number; y: number; z: number }): string {
+  return `(${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)})`;
+}
 
 export function setupAgentHandler(wss: WebSocketServer) {
   wss.on('connection', (ws: WebSocket) => {
     let clientAgentId: string | null = null;
 
-    ws.on('message', (raw) => {
+    ws.on('message', async (raw: Buffer) => {
       try {
-
-        const msg: WsMessage = JSON.parse(raw.toString());
-        
-        // 记录所有消息类型用于调试
-
-
-        // 处理心跳
-        if (msg.type === 'ping') {
-
-          ws.send(JSON.stringify({ type: 'pong', payload: null }));
-          return;
-        }
+        const msg = JSON.parse(raw.toString()) as WsMessage;
 
         switch (msg.type) {
           case 'agent:register': {
-            // Agent 注册
             const payload = msg.payload as AgentRegisterPayload;
             const { agentId, username, serverHost, serverPort } = payload;
+            clientAgentId = agentId;
+            agentClients.set(agentId, ws);
 
             const isReconnect = agentStateManager.hasAgent(agentId);
+            agentStateManager.register(agentId, {
+              id: agentId,
+              username,
+              connected: true,
+              serverHost,
+              serverPort,
+            });
 
-            console.log(`[Agent] ${isReconnect ? 'Reconnected' : 'Registered'}: ${username} (${agentId})`);
-
-            // 保存状态（register 内部处理了重连逻辑）
-            agentStateManager.register(agentId, username, serverHost, serverPort);
-            agentClients.set(agentId, ws);
-            clientAgentId = agentId;
-
-            // 添加连接/重连事件
-            agentStateManager.addEvent(
-              agentId,
-              createAgentEvent(agentId, 'connected', `${username} ${isReconnect ? '已重新连接' : '已连接'}到服务器 ${serverHost}:${serverPort}`)
-            );
-
-            // 广播给观测者：重连用 status:update，新注册用 agent:registered
-            if (isReconnect) {
-              broadcastToObservers({
-                type: 'status:update',
-                payload: {
-                  agentId,
-                  status: agentStateManager.getAgentStatus(agentId),
-                },
-              });
-            } else {
-              broadcastToObservers({
-                type: 'agent:registered',
-                payload: {
-                  agentId,
-                  status: agentStateManager.getAgentStatus(agentId),
-                },
-              });
-            }
-
-            // 回复 Agent
+            // 确认注册
             ws.send(JSON.stringify({
               type: 'agent:register:ack',
-              payload: { agentId, success: true },
+              payload: { success: true, agentId, isReconnect },
             }));
+
+            // 广播给观测者
+            const status = agentStateManager.getAgentStatus(agentId);
+            broadcastToObservers({
+              type: 'status:update',
+              payload: {
+                agentId,
+                status,
+                event: createAgentEvent(
+                  agentId,
+                  isReconnect ? 'connected' : 'connected',
+                  `${username} ${isReconnect ? '已重新连接' : '已连接'}`
+                ),
+              },
+            });
             break;
           }
 
           case 'agent:status:update': {
-            // 状态更新
-            if (!msg.payload) {
-// 不需要处理
-              break;
-            }
             const payload = msg.payload as StatusUpdatePayload;
             const { agentId, status } = payload;
-
-            if (!agentId) {
-// agentId 不存在
-              break;
-            }
 
             const prevStatus = agentStateManager.getAgentStatus(agentId);
             const updatedStatus = agentStateManager.updateStatus(agentId, status);
@@ -135,6 +134,21 @@ export function setupAgentHandler(wss: WebSocketServer) {
                   }
                 }
               }
+
+              // 持久化轨迹数据（位置变化时）
+              if (status.position) {
+                try {
+                  await agentDb.insertStatusUpdate({
+                    agent_id: agentId,
+                    position: status.position,
+                    health: status.health,
+                    food: status.food,
+                    dimension: status.dimension,
+                  });
+                } catch (err) {
+                  console.error('持久化轨迹数据失败:', err);
+                }
+              }
             }
 
             // 广播给观测者
@@ -146,7 +160,6 @@ export function setupAgentHandler(wss: WebSocketServer) {
           }
 
           case 'agent:event': {
-            // Agent 事件
             const payload = msg.payload as EventPayload;
             const { agentId, event } = payload;
 
@@ -167,7 +180,6 @@ export function setupAgentHandler(wss: WebSocketServer) {
           }
 
           case 'agent:world:snapshot': {
-            // 世界快照
             const payload = msg.payload as WorldSnapshotPayload;
             const { agentId, snapshot } = payload;
 
@@ -177,6 +189,313 @@ export function setupAgentHandler(wss: WebSocketServer) {
               type: 'world:snapshot',
               payload: { agentId, snapshot },
             });
+            break;
+          }
+
+          case 'agent:vision': {
+            // Agent 截图上报
+            const payload = msg.payload as VisionPayload;
+            const { agentId, vision } = payload;
+
+            try {
+              // 上传图片到对象存储
+              const uploadResult = await uploadVisionImage(
+                agentId,
+                vision.captureId,
+                vision.imageData,
+                vision.thumbnailData,
+              );
+
+              // 存入数据库
+              await agentDb.insertVision({
+                agent_id: agentId,
+                capture_id: vision.captureId,
+                image_url: uploadResult.imageUrl,
+                thumbnail_url: uploadResult.thumbnailUrl,
+                dimensions: vision.dimensions,
+                position: vision.position,
+                facing: vision.facing,
+                description: vision.description,
+                scene_info: vision.scene as Record<string, unknown> | undefined,
+                size_bytes: uploadResult.sizeBytes,
+              });
+
+              // 添加截图事件
+              const visionEvent = agentStateManager.addEvent(
+                agentId,
+                createAgentEvent(agentId, 'vision_captured', `截图: ${vision.description || vision.captureId}`, {
+                  captureId: vision.captureId,
+                  imageUrl: uploadResult.imageUrl,
+                  thumbnailUrl: uploadResult.thumbnailUrl,
+                })
+              );
+
+              // 广播给观测者
+              broadcastToObservers({
+                type: 'vision:new',
+                payload: {
+                  agentId,
+                  vision: {
+                    captureId: vision.captureId,
+                    imageUrl: uploadResult.imageUrl,
+                    thumbnailUrl: uploadResult.thumbnailUrl,
+                    dimensions: vision.dimensions,
+                    position: vision.position,
+                    description: vision.description,
+                    sceneInfo: vision.scene,
+                    timestamp: vision.timestamp,
+                  },
+                },
+              });
+
+              if (visionEvent) {
+                broadcastToObservers({ type: 'event:new', payload: { agentId, event: visionEvent } });
+              }
+
+              // ACK
+              ws.send(JSON.stringify({
+                type: 'agent:vision:ack',
+                payload: { success: true, captureId: vision.captureId, imageUrl: uploadResult.imageUrl },
+              }));
+            } catch (err) {
+              console.error('处理截图上传失败:', err);
+              ws.send(JSON.stringify({
+                type: 'agent:vision:ack',
+                payload: { success: false, captureId: vision.captureId, error: '截图上传失败' },
+              }));
+            }
+            break;
+          }
+
+          case 'agent:build:progress': {
+            // 建造进度上报
+            const payload = msg.payload as BuildProgressPayload;
+            const { agentId, build } = payload;
+
+            try {
+              await agentDb.upsertBuild({
+                agent_id: agentId,
+                build_id: build.buildId,
+                blueprint_name: build.blueprintName,
+                status: build.status,
+                progress: build.progress,
+                current_layer: build.currentLayer,
+                total_layers: build.totalLayers,
+                blocks_placed: build.blocksPlaced,
+                blocks_total: build.blocksTotal,
+                materials_used: build.materialsUsed,
+                started_at: new Date(build.startedAt).toISOString(),
+                estimated_completion: build.estimatedCompletion
+                  ? new Date(build.estimatedCompletion).toISOString()
+                  : undefined,
+                errors: build.errors,
+              });
+
+              // 广播给观测者
+              broadcastToObservers({
+                type: 'build:progress',
+                payload: { agentId, build },
+              });
+
+              // 映射建造状态到事件类型
+              const buildStatusToEvent: Record<string, EventType> = {
+                started: 'build_started',
+                in_progress: 'build_progress',
+                completed: 'build_completed',
+                failed: 'build_failed',
+                cancelled: 'build_failed',
+              };
+              const buildEventType = buildStatusToEvent[build.status] || 'build_progress';
+
+              // 添加建造事件
+              const buildEvent = agentStateManager.addEvent(
+                agentId,
+                createAgentEvent(
+                  agentId,
+                  buildEventType,
+                  `建造 ${build.blueprintName}: ${build.status} (${Math.round(build.progress * 100)}%)`,
+                  { buildId: build.buildId, progress: build.progress, status: build.status }
+                )
+              );
+              if (buildEvent) {
+                broadcastToObservers({ type: 'event:new', payload: { agentId, event: buildEvent } });
+              }
+            } catch (err) {
+              console.error('处理建造进度失败:', err);
+            }
+            break;
+          }
+
+          case 'agent:subscribe': {
+            // 事件订阅
+            const payload = msg.payload as SubscribePayload;
+            const { agentId, subscription } = payload;
+
+            try {
+              const status = subscription.action === 'unsubscribe' ? 'inactive' : 'active';
+              await agentDb.upsertSubscription({
+                agent_id: agentId,
+                subscription_id: subscription.subscriptionId,
+                events: subscription.events,
+                filter: subscription.filter as Record<string, unknown> | undefined,
+                callback_url: subscription.callbackUrl || undefined,
+                status,
+              });
+
+              ws.send(JSON.stringify({
+                type: 'agent:subscribe:ack',
+                payload: {
+                  success: true,
+                  subscriptionId: subscription.subscriptionId,
+                  status,
+                },
+              }));
+            } catch (err) {
+              console.error('处理事件订阅失败:', err);
+              ws.send(JSON.stringify({
+                type: 'agent:subscribe:ack',
+                payload: { success: false, error: '订阅处理失败' },
+              }));
+            }
+            break;
+          }
+
+          case 'agent:team:update': {
+            // 团队协作
+            const payload = msg.payload as TeamUpdatePayload;
+            const { agentId, team } = payload;
+
+            try {
+              const teamStatus = team.action === 'disbanded' ? 'disbanded' : 'active';
+              await agentDb.upsertTeam({
+                team_id: team.teamId,
+                team_name: team.teamName,
+                leader_agent_id: team.leader,
+                members: team.members,
+                task: team.task,
+                status: teamStatus,
+              });
+
+              // 广播团队更新
+              broadcastToObservers({
+                type: 'team:update',
+                payload: { agentId, team },
+              });
+
+              // 映射团队动作到事件类型
+              const teamActionToEvent: Record<string, EventType> = {
+                created: 'team_created',
+                joined: 'team_joined',
+                left: 'team_left',
+                disbanded: 'team_disbanded',
+                status_update: 'team_joined',
+              };
+              const teamEventType = teamActionToEvent[team.action] || 'team_created';
+
+              // 添加团队事件
+              const teamEvent = agentStateManager.addEvent(
+                agentId,
+                createAgentEvent(
+                  agentId,
+                  teamEventType,
+                  `团队 ${team.teamName}: ${team.action}`,
+                  { teamId: team.teamId, action: team.action }
+                )
+              );
+              if (teamEvent) {
+                broadcastToObservers({ type: 'event:new', payload: { agentId, event: teamEvent } });
+              }
+            } catch (err) {
+              console.error('处理团队更新失败:', err);
+            }
+            break;
+          }
+
+          case 'agent:chat': {
+            // 聊天消息
+            const payload = msg.payload as ChatPayload;
+            const { agentId, message } = payload;
+
+            try {
+              await agentDb.insertMessage({
+                message_id: message.messageId,
+                agent_id: agentId,
+                content: message.content,
+                channel: message.channel,
+                recipient: message.recipient,
+                sender: message.sender,
+                mentioned_agents: message.mentionedAgents,
+              });
+
+              // 广播聊天消息
+              broadcastToObservers({
+                type: 'chat:new',
+                payload: { agentId, message },
+              });
+
+              // 如果是私聊，转发给目标 Agent
+              if (message.channel === 'whisper' && message.recipient) {
+                const targetWs = agentClients.get(message.recipient);
+                if (targetWs && targetWs.readyState === WebSocket.OPEN) {
+                  targetWs.send(JSON.stringify({
+                    type: 'chat:received',
+                    payload: { message },
+                  }));
+                }
+              }
+
+              // 添加聊天事件
+              const chatEvent = agentStateManager.addEvent(
+                agentId,
+                createAgentEvent(
+                  agentId,
+                  message.channel === 'whisper' ? 'chat_sent' : 'chat_sent',
+                  `[${message.channel}] ${message.sender.username}: ${message.content}`,
+                  { channel: message.channel, recipient: message.recipient }
+                )
+              );
+              if (chatEvent) {
+                broadcastToObservers({ type: 'event:new', payload: { agentId, event: chatEvent } });
+              }
+            } catch (err) {
+              console.error('处理聊天消息失败:', err);
+            }
+            break;
+          }
+
+          case 'agent:trade': {
+            // 村民交易
+            const payload = msg.payload as TradePayload;
+            const { agentId, trade } = payload;
+
+            // 映射交易动作到事件类型
+            const tradeActionToEvent: Record<string, EventType> = {
+              trade_opened: 'trade_opened',
+              trade_completed: 'trade_completed',
+              trade_failed: 'trade_failed',
+            };
+            const tradeEventType = tradeActionToEvent[trade.action] || 'trade_opened';
+
+            // 添加交易事件
+            const tradeEvent = agentStateManager.addEvent(
+              agentId,
+              createAgentEvent(
+                agentId,
+                tradeEventType,
+                `交易${trade.action === 'trade_completed' ? '完成' : trade.action === 'trade_failed' ? '失败' : '打开'}: ${trade.villagerProfession || `村民#${trade.villagerId}`}`,
+                { tradeId: trade.tradeId, villagerId: trade.villagerId, action: trade.action }
+              )
+            );
+
+            // 广播给观测者
+            broadcastToObservers({
+              type: 'trade:update',
+              payload: { agentId, trade },
+            });
+
+            if (tradeEvent) {
+              broadcastToObservers({ type: 'event:new', payload: { agentId, event: tradeEvent } });
+            }
             break;
           }
 
@@ -212,6 +531,11 @@ export function setupAgentHandler(wss: WebSocketServer) {
               type: 'agents:list',
               payload: { agents },
             }));
+            break;
+          }
+
+          case 'ping': {
+            ws.send(JSON.stringify({ type: 'pong', payload: null }));
             break;
           }
 

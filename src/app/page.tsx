@@ -1,13 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, Users, Wifi, WifiOff, ChevronLeft, Play, ChevronDown, Pause, MapPin, Heart, Utensils, Compass, Copy, Check, Database, Trash2 } from 'lucide-react';
+import { Bot, Users, Wifi, ChevronLeft, Play, ChevronDown, Pause, MapPin, Heart, Utensils, Compass, Copy, Check, Database, Trash2, Eye, Hammer, MessageSquare, Trophy, Activity } from 'lucide-react';
 import { useAgentObserver } from '@/hooks/use-agent-observer';
 import { useDemoAgent, AddDemoAgentDialog } from '@/hooks/use-demo-agent';
 import { AgentCard } from '@/components/agent/agent-card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MiniMap } from '@/components/agent/mini-map';
+import { VisionGallery } from '@/components/agent/vision-gallery';
+import { BuildProgress } from '@/components/agent/build-progress';
+import { ChatWindow } from '@/components/agent/chat-window';
+import { TeamPanel } from '@/components/agent/team-panel';
+import { StatsAndLeaderboard } from '@/components/agent/stats-leaderboard';
 import type { AgentStatus, WorldSnapshot } from '@/lib/types/agent';
 import { InventoryGrid } from '@/components/agent/inventory-grid';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -19,6 +24,8 @@ export default function ObserverPage() {
   const [copied, setCopied] = useState(false);
   const [clearDataDialog, setClearDataDialog] = useState<'events' | 'all' | null>(null);
   const [clearingData, setClearingData] = useState(false);
+  type DetailTab = 'overview' | 'vision' | 'builds' | 'chat';
+  const [detailTab, setDetailTab] = useState<DetailTab>('overview');
 
   const handleClearData = async (scope: 'events' | 'all') => {
     setClearingData(true);
@@ -42,7 +49,7 @@ export default function ObserverPage() {
     }
   };
 
-  const { agents, events, worldSnapshots, isConnected } = useAgentObserver();
+  const { agents, events, worldSnapshots, isConnected, visions, builds, chatMessages, teams } = useAgentObserver();
   const { activeAgents, startDemoAgent, pauseDemoAgent, resumeDemoAgent, stopDemoAgent } = useDemoAgent();
 
   // 合并实时 Agent 状态和本地演示 Agent 配置（包含已暂停的）
@@ -85,6 +92,7 @@ export default function ObserverPage() {
 
   const handleAgentClick = (agentId: string) => {
     setSelectedAgentId(agentId);
+    setDetailTab('overview');
     setViewMode('detail');
   };
 
@@ -464,15 +472,29 @@ export default function ObserverPage() {
                 <AddDemoAgentDialog />
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from(allAgents.entries()).filter(([, agent]) => agent != null).map(([agentId, agent]) => (
-                  <AgentCard
-                    key={agentId}
-                    agent={agent}
-                    events={events.get(agentId) || []}
-                    onClick={() => handleAgentClick(agentId)}
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Agent Cards */}
+                <div className="lg:col-span-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {Array.from(allAgents.entries()).filter(([, agent]) => agent != null).map(([agentId, agent]) => (
+                      <AgentCard
+                        key={agentId}
+                        agent={agent}
+                        events={events.get(agentId) || []}
+                        onClick={() => handleAgentClick(agentId)}
+                      />
+                    ))}
+                  </div>
+                </div>
+                {/* Stats & Leaderboard Sidebar */}
+                <div className="space-y-6">
+                  <StatsAndLeaderboard />
+                  {/* Global Chat */}
+                  <ChatWindow
+                    messages={chatMessages}
+                    currentAgentId={undefined}
                   />
-                ))}
+                </div>
               </div>
             )}
           </main>
@@ -502,7 +524,7 @@ export default function ObserverPage() {
                     </div>
                   </div>
                 </div>
-                {/* 连接状态指示 - 仅展示 */}
+                {/* 连接状态指示 */}
                 <div className="flex items-center gap-2 text-sm">
                   <span className={`w-2 h-2 rounded-full ${selectedAgentId && activeAgents.get(selectedAgentId)?.pausedAt ? 'bg-stone-400' : 'bg-emerald-500 animate-pulse'}`} />
                   <span className="text-stone-500">
@@ -513,149 +535,209 @@ export default function ObserverPage() {
             </div>
           </header>
 
+          {/* Tab Navigation */}
+          <div className="max-w-7xl mx-auto px-6 pt-4">
+            <div className="flex items-center gap-1 border-b border-stone-200">
+              {[
+                { key: 'overview', label: '总览', icon: Activity },
+                { key: 'vision', label: '截图', icon: Eye },
+                { key: 'builds', label: '建造', icon: Hammer },
+                { key: 'chat', label: '聊天', icon: MessageSquare },
+              ].map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setDetailTab(key as DetailTab)}
+                  className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
+                    detailTab === key
+                      ? 'border-emerald-600 text-emerald-700'
+                      : 'border-transparent text-stone-400 hover:text-stone-600'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Main Content */}
-          <main className="max-w-7xl mx-auto px-6 py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Left Column - Status & MiniMap */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Status Cards */}
-                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
-                  <h2 className="text-lg font-bold text-stone-900 mb-4">状态</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <p className="text-sm text-stone-500 mb-1">位置</p>
-                      <p className="font-mono text-stone-800">
-                        {selectedAgent.position?.x}, {selectedAgent.position?.y}, {selectedAgent.position?.z}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-stone-500 mb-1">游戏模式</p>
-                      <Badge variant="outline" className="capitalize">
-                        {selectedAgent.gamemode || 'survival'}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-sm text-stone-500 mb-1">状态</p>
-                      <div className="flex items-center gap-1">
-                        {selectedAgent.isOnGround && (
-                          <Badge className="bg-emerald-100 text-emerald-700">地面</Badge>
-                        )}
-                        {selectedAgent.isSprinting && (
-                          <Badge className="bg-blue-100 text-blue-700">疾跑</Badge>
-                        )}
-                        {selectedAgent.isSneaking && (
-                          <Badge className="bg-amber-100 text-amber-700">潜行</Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm text-stone-500 mb-1">视角</p>
-                      <p className="font-mono text-stone-800">
-                        Y: {selectedAgent.yaw?.toFixed(1)}° P: {selectedAgent.pitch?.toFixed(1)}°
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Health & Food */}
-                  <div className="grid grid-cols-2 gap-4 mt-6">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Heart className="w-4 h-4 text-red-500" />
-                          <span className="text-sm text-stone-600">生命值</span>
-                        </div>
-                        <span className="text-sm font-medium text-stone-800">
-                          {selectedAgent.health} / {selectedAgent.maxHealth || 20}
-                        </span>
-                      </div>
-                      <div className="h-3 bg-stone-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-red-400 to-red-500 rounded-full transition-all"
-                          style={{ width: `${((selectedAgent.health || 0) / (selectedAgent.maxHealth || 20)) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Utensils className="w-4 h-4 text-amber-500" />
-                          <span className="text-sm text-stone-600">饥饿值</span>
-                        </div>
-                        <span className="text-sm font-medium text-stone-800">
-                          {selectedAgent.food} / 20
-                        </span>
-                      </div>
-                      <div className="h-3 bg-stone-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all"
-                          style={{ width: `${((selectedAgent.food || 20) / 20) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* MiniMap */}
-                {selectedSnapshot && (
+          <main className="max-w-7xl mx-auto px-6 py-6">
+            {detailTab === 'overview' && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column - Status & MiniMap */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Status Cards */}
                   <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
-                    <h2 className="text-lg font-bold text-stone-900 mb-4 flex items-center gap-2">
-                      <Compass className="w-5 h-5 text-emerald-600" />
-                      周围环境
-                    </h2>
-                    <MiniMap
-                      playerX={selectedAgent.position.x}
-                      playerY={selectedAgent.position.y}
-                      playerZ={selectedAgent.position.z}
-                      yaw={selectedAgent.yaw || 0}
-                      blocks={selectedSnapshot?.blocks || []}
-                      entities={(selectedSnapshot?.entities || []).map((e, idx) => ({ id: e.id || `entity-${idx}`, type: e.type, position: e.position }))}
-                    />
+                    <h2 className="text-lg font-bold text-stone-900 mb-4">状态</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-sm text-stone-500 mb-1">位置</p>
+                        <p className="font-mono text-stone-800">
+                          {selectedAgent.position?.x}, {selectedAgent.position?.y}, {selectedAgent.position?.z}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-stone-500 mb-1">游戏模式</p>
+                        <Badge variant="outline" className="capitalize">
+                          {selectedAgent.gamemode || 'survival'}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm text-stone-500 mb-1">状态</p>
+                        <div className="flex items-center gap-1">
+                          {selectedAgent.isOnGround && (
+                            <Badge className="bg-emerald-100 text-emerald-700">地面</Badge>
+                          )}
+                          {selectedAgent.isSprinting && (
+                            <Badge className="bg-blue-100 text-blue-700">疾跑</Badge>
+                          )}
+                          {selectedAgent.isSneaking && (
+                            <Badge className="bg-amber-100 text-amber-700">潜行</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-stone-500 mb-1">视角</p>
+                        <p className="font-mono text-stone-800">
+                          Y: {selectedAgent.yaw?.toFixed(1)}° P: {selectedAgent.pitch?.toFixed(1)}°
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Health & Food */}
+                    <div className="grid grid-cols-2 gap-4 mt-6">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Heart className="w-4 h-4 text-red-500" />
+                            <span className="text-sm text-stone-600">生命值</span>
+                          </div>
+                          <span className="text-sm font-medium text-stone-800">
+                            {selectedAgent.health} / {selectedAgent.maxHealth || 20}
+                          </span>
+                        </div>
+                        <div className="h-3 bg-stone-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-red-400 to-red-500 rounded-full transition-all"
+                            style={{ width: `${((selectedAgent.health || 0) / (selectedAgent.maxHealth || 20)) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Utensils className="w-4 h-4 text-amber-500" />
+                            <span className="text-sm text-stone-600">饥饿值</span>
+                          </div>
+                          <span className="text-sm font-medium text-stone-800">
+                            {selectedAgent.food} / 20
+                          </span>
+                        </div>
+                        <div className="h-3 bg-stone-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all"
+                            style={{ width: `${((selectedAgent.food || 20) / 20) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
 
-              {/* Right Column - Inventory & Events */}
-              <div className="space-y-6">
-                {/* Inventory */}
-                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
-                  <h2 className="text-lg font-bold text-stone-900 mb-4">物品栏</h2>
-                  <InventoryGrid
-                    inventory={selectedAgent.inventory || []}
-                    equipment={{
-                      head: selectedAgent.equipment?.head,
-                      chest: selectedAgent.equipment?.chest,
-                      legs: selectedAgent.equipment?.legs,
-                      feet: selectedAgent.equipment?.feet,
-                      mainhand: selectedAgent.equipment?.mainhand,
-                      offhand: selectedAgent.equipment?.offhand,
-                    }}
+                  {/* MiniMap */}
+                  {selectedSnapshot && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
+                      <h2 className="text-lg font-bold text-stone-900 mb-4 flex items-center gap-2">
+                        <Compass className="w-5 h-5 text-emerald-600" />
+                        周围环境
+                      </h2>
+                      <MiniMap
+                        playerX={selectedAgent.position.x}
+                        playerY={selectedAgent.position.y}
+                        playerZ={selectedAgent.position.z}
+                        yaw={selectedAgent.yaw || 0}
+                        blocks={selectedSnapshot?.blocks || []}
+                        entities={(selectedSnapshot?.entities || []).map((e, idx) => ({ id: e.id || `entity-${idx}`, type: e.type, position: e.position }))}
+                      />
+                    </div>
+                  )}
+
+                  {/* Team Panel */}
+                  <TeamPanel
+                    teams={teams}
+                    currentAgentId={selectedAgentId || undefined}
                   />
                 </div>
 
-                {/* Events */}
-                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
-                  <h2 className="text-lg font-bold text-stone-900 mb-4">事件日志</h2>
-                  <div className="space-y-2 max-h-80 overflow-y-auto">
-                    {selectedEvents.length === 0 ? (
-                      <p className="text-sm text-stone-400 text-center py-4">暂无事件</p>
-                    ) : (
-                      selectedEvents.slice(-20).reverse().map((event, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-start gap-3 p-3 rounded-lg bg-stone-50 border border-stone-100"
-                        >
-                          <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-stone-700">{event.type}</p>
-                            <p className="text-xs text-stone-400 truncate">{String(event.data || '')}</p>
-                          </div>
-                        </div>
-                      ))
-                    )}
+                {/* Right Column - Inventory, Events, Chat */}
+                <div className="space-y-6">
+                  {/* Inventory */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
+                    <h2 className="text-lg font-bold text-stone-900 mb-4">物品栏</h2>
+                    <InventoryGrid
+                      inventory={selectedAgent.inventory || []}
+                      equipment={{
+                        head: selectedAgent.equipment?.head,
+                        chest: selectedAgent.equipment?.chest,
+                        legs: selectedAgent.equipment?.legs,
+                        feet: selectedAgent.equipment?.feet,
+                        mainhand: selectedAgent.equipment?.mainhand,
+                        offhand: selectedAgent.equipment?.offhand,
+                      }}
+                    />
                   </div>
+
+                  {/* Events */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
+                    <h2 className="text-lg font-bold text-stone-900 mb-4">事件日志</h2>
+                    <div className="space-y-2 max-h-80 overflow-y-auto">
+                      {selectedEvents.length === 0 ? (
+                        <p className="text-sm text-stone-400 text-center py-4">暂无事件</p>
+                      ) : (
+                        selectedEvents.slice(-20).reverse().map((event, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-start gap-3 p-3 rounded-lg bg-stone-50 border border-stone-100"
+                          >
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-stone-700">{event.type}</p>
+                              <p className="text-xs text-stone-400 truncate">{String(event.data || '')}</p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Chat */}
+                  <ChatWindow
+                    messages={chatMessages.filter((m) => m.agentId === selectedAgentId)}
+                    currentAgentId={selectedAgentId || undefined}
+                  />
                 </div>
               </div>
-            </div>
+            )}
+
+            {detailTab === 'vision' && (
+              <VisionGallery
+                visions={visions.get(selectedAgentId || '') || []}
+                agentName={selectedAgent.username || '?'}
+              />
+            )}
+
+            {detailTab === 'builds' && (
+              <BuildProgress
+                builds={builds.get(selectedAgentId || '') || []}
+                agentName={selectedAgent.username || '?'}
+              />
+            )}
+
+            {detailTab === 'chat' && (
+              <ChatWindow
+                messages={chatMessages.filter((m) => m.agentId === selectedAgentId)}
+                currentAgentId={selectedAgentId || undefined}
+              />
+            )}
           </main>
         </div>
       )}

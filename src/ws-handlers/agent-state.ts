@@ -1,310 +1,134 @@
-// Agent 状态管理器 - 服务端单例（带数据库持久化）
-
-import type {
-  AgentStatus,
-  AgentEvent,
-  EventType,
-  Position,
-  WorldSnapshot,
-} from '@/lib/types/agent';
-import { agentDb, agentEventDb, agentWorldSnapshotDb } from '@/storage/database/agent-db';
+import type { AgentStatus, AgentEvent, WorldSnapshot, Position } from '@/lib/types/agent';
+import { agentDb } from '@/storage/database/agent-db';
 
 interface AgentState {
   status: AgentStatus;
   events: AgentEvent[];
   worldSnapshot: WorldSnapshot | null;
+  // 新增：内存中的建造/订阅/团队数据
+  builds: Map<string, unknown>;
+  subscriptions: Map<string, unknown>;
 }
 
 class AgentStateManager {
   private agents: Map<string, AgentState> = new Map();
-  private maxEventsPerAgent = 100;
-  private dbSyncInterval: NodeJS.Timeout | null = null;
-  private pendingDbSyncs: Set<string> = new Set();
 
-  constructor() {
-    // 定期同步到数据库
-    this.startDbSync();
-  }
-
-  // 启动定期数据库同步
-  private startDbSync() {
-    // 每 30 秒同步一次在线 Agent 的状态到数据库
-    this.dbSyncInterval = setInterval(async () => {
-      await this.syncAllToDb();
-    }, 30000);
-  }
-
-  // 停止数据库同步
-  public stop() {
-    if (this.dbSyncInterval) {
-      clearInterval(this.dbSyncInterval);
-      this.dbSyncInterval = null;
-    }
-  }
-
-  // 同步所有 Agent 到数据库
-  private async syncAllToDb() {
-    const agents = this.getAllAgents();
-    for (const status of agents) {
-      if (status.connected) {
-        await this.syncAgentToDb(status.id);
-      }
-    }
-  }
-
-  // 同步单个 Agent 到数据库
-  private async syncAgentToDb(agentId: string) {
-    try {
-      const status = this.getAgentStatus(agentId);
-      if (!status) return;
-
-      await agentDb.updateStatus(agentId, status as unknown as Record<string, unknown>);
-      this.pendingDbSyncs.delete(agentId);
-    } catch (error) {
-      console.error(`同步 Agent ${agentId} 到数据库失败:`, error);
-    }
-  }
-
-  // 注册新 Agent
-  async register(agentId: string, username: string, serverHost: string, serverPort: number): Promise<AgentStatus> {
-    // 检查是否是已注册的 Agent 重连
-    const existingState = this.agents.get(agentId);
-    if (existingState) {
-      // Agent 重连：恢复在线状态，保留原有数据
-      existingState.status.connected = true;
-      existingState.status.username = username;
-      existingState.status.world = serverHost;
-      existingState.status.lastUpdated = Date.now();
-
-      // 持久化在线状态到数据库
-      try {
-        await agentDb.upsert({
+  // 注册 Agent
+  register(agentId: string, data: {
+    id: string;
+    username: string;
+    connected: boolean;
+    serverHost?: string;
+    serverPort?: number;
+  }) {
+    const existing = this.agents.get(agentId);
+    if (existing) {
+      // 重连：恢复在线状态
+      existing.status.connected = true;
+      existing.status.lastUpdated = Date.now();
+    } else {
+      // 新注册
+      this.agents.set(agentId, {
+        status: {
           id: agentId,
-          username,
-          server_host: serverHost,
-          server_port: serverPort,
-          last_status: existingState.status as unknown as Record<string, unknown>,
-          is_online: true,
-        });
-      } catch (error) {
-        console.error(`重连 Agent ${agentId} 更新数据库失败:`, error);
-      }
-
-      return existingState.status;
+          username: data.username,
+          connected: true,
+          position: { x: 0, y: 64, z: 0 },
+          health: 20,
+          maxHealth: 20,
+          food: 20,
+          saturation: 5,
+          gamemode: 'survival',
+          inventory: [],
+          equipment: {},
+          world: data.serverHost || '',
+          dimension: 'overworld',
+          yaw: 0,
+          pitch: 0,
+          isOnGround: true,
+          isSleeping: false,
+          isSprinting: false,
+          isSneaking: false,
+          lastUpdated: Date.now(),
+        },
+        events: [],
+        worldSnapshot: null,
+        builds: new Map(),
+        subscriptions: new Map(),
+      });
     }
-
-    // 新 Agent 注册：创建默认状态
-    const status: AgentStatus = {
-      id: agentId,
-      username,
-      connected: true,
-      position: { x: 0, y: 64, z: 0 },
-      health: 20,
-      maxHealth: 20,
-      food: 20,
-      saturation: 5,
-      gamemode: 'survival',
-      inventory: [],
-      equipment: {},
-      world: serverHost,
-      dimension: 'overworld',
-      yaw: 0,
-      pitch: 0,
-      isOnGround: true,
-      isSleeping: false,
-      isSprinting: false,
-      isSneaking: false,
-      lastUpdated: Date.now(),
-    };
-
-    this.agents.set(agentId, {
-      status,
-      events: [],
-      worldSnapshot: null,
-    });
 
     // 持久化到数据库
-    try {
-      await agentDb.upsert({
-        id: agentId,
-        username,
-        server_host: serverHost,
-        server_port: serverPort,
-        last_status: status as unknown as Record<string, unknown>,
-        is_online: true,
-      });
-    } catch (error) {
-      console.error(`注册 Agent ${agentId} 到数据库失败:`, error);
-    }
-
-    // 从数据库加载历史事件
-    try {
-      const events = await agentEventDb.getRecentByAgent(agentId, 100);
-      const state = this.agents.get(agentId);
-      if (state && events) {
-        state.events = events.map((e) => ({
-          id: String(e.id),
-          agentId: e.agent_id,
-          type: e.event_type as EventType,
-          description: e.description || '',
-          data: (e.event_data || {}) as Record<string, unknown>,
-          timestamp: new Date(e.created_at).getTime(),
-        }));
-      }
-    } catch (error) {
-      console.error(`加载 Agent ${agentId} 历史事件失败:`, error);
-    }
-
-    return status;
+    this.persistAgent(agentId);
   }
 
-  // Agent 断开连接 - 标记离线，保留内存数据
-  async disconnect(agentId: string): Promise<void> {
-    const state = this.agents.get(agentId);
-    if (state) {
-      // 标记为离线，保留所有数据
-      state.status.connected = false;
-      state.status.lastUpdated = Date.now();
+  // 断开连接（不删除内存数据）
+  disconnect(agentId: string) {
+    const agent = this.agents.get(agentId);
+    if (agent) {
+      agent.status.connected = false;
+      agent.status.lastUpdated = Date.now();
     }
 
-    // 更新数据库中的在线状态
-    try {
-      await agentDb.updateOnlineStatus(agentId, false);
-    } catch (error) {
-      console.error(`更新 Agent ${agentId} 离线状态失败:`, error);
-    }
+    // 更新数据库在线状态
+    agentDb.updateOnlineStatus(agentId, false).catch((err) => {
+      console.error(`更新 Agent ${agentId} 离线状态失败:`, err);
+    });
   }
 
-  // 更新 Agent 状态
-  updateStatus(agentId: string, updates: Partial<AgentStatus>): AgentStatus | null {
-    const state = this.agents.get(agentId);
-    if (!state) return null;
+  // 更新 Agent 状态（支持部分更新）
+  updateStatus(agentId: string, update: Partial<AgentStatus>): AgentStatus | null {
+    const agent = this.agents.get(agentId);
+    if (!agent) return null;
 
     // 合并更新
-    state.status = {
-      ...state.status,
-      ...updates,
-      lastUpdated: Date.now(),
-    };
+    Object.assign(agent.status, update, { lastUpdated: Date.now() });
 
-    // 标记需要同步到数据库
-    this.pendingDbSyncs.add(agentId);
+    // 异步持久化
+    this.persistAgent(agentId);
 
-    // 批量同步（每 5 秒或累积 10 个变更）
-    if (this.pendingDbSyncs.size >= 10) {
-      this.syncAgentToDb(agentId);
-    }
-
-    return state.status;
+    return agent.status;
   }
 
   // 添加事件
   addEvent(agentId: string, event: Omit<AgentEvent, 'id' | 'timestamp'>): AgentEvent | null {
-    const state = this.agents.get(agentId);
-    if (!state) return null;
+    const agent = this.agents.get(agentId);
+    if (!agent) return null;
 
-    const newEvent: AgentEvent = {
+    const fullEvent: AgentEvent = {
       ...event,
-      id: `${agentId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       timestamp: Date.now(),
     };
 
-    state.events.unshift(newEvent);
-
-    // 限制事件数量
-    if (state.events.length > this.maxEventsPerAgent) {
-      state.events = state.events.slice(0, this.maxEventsPerAgent);
+    // 内存中保留最近 100 条事件
+    agent.events.unshift(fullEvent);
+    if (agent.events.length > 100) {
+      agent.events = agent.events.slice(0, 100);
     }
 
-    // 持久化到数据库（异步，不阻塞）
-    this.persistEvent(agentId, event);
+    // 异步持久化事件
+    this.persistEvent(agentId, fullEvent);
 
-    return newEvent;
-  }
-
-  // 持久化事件到数据库
-  private async persistEvent(agentId: string, event: Omit<AgentEvent, 'id' | 'timestamp'>) {
-    try {
-      await agentEventDb.insert({
-        agent_id: agentId,
-        event_type: event.type,
-        description: event.description,
-        event_data: event.data,
-      });
-
-      // 清理旧事件（保留 200 条）
-      await agentEventDb.cleanupOldEvents(agentId, 200);
-    } catch (error) {
-      // 外键约束失败时，先确保 agent 记录存在再重试
-      const errMsg = error instanceof Error ? error.message : String(error);
-      if (errMsg.includes('foreign key') || errMsg.includes('fkey')) {
-        // 确保数据库中存在 agent 记录（防止清空数据后外键约束失败）
-        const state = this.agents.get(agentId);
-        if (state) {
-          try {
-            await agentDb.upsert({
-              id: agentId,
-              username: state.status.username ?? 'unknown',
-              server_host: state.status.world ?? '',
-              server_port: 25565,
-              last_status: state.status as unknown as Record<string, unknown>,
-              is_online: true,
-            });
-          } catch {
-            // upsert 失败不阻塞事件插入
-          }
-        }
-        try {
-          await agentEventDb.insert({
-            agent_id: agentId,
-            event_type: event.type,
-            description: event.description,
-            event_data: event.data,
-          });
-        } catch (retryError) {
-          console.error(`持久化事件重试失败:`, retryError);
-        }
-      } else {
-        console.error(`持久化事件失败:`, error);
-      }
-    }
+    return fullEvent;
   }
 
   // 更新世界快照
-  updateWorldSnapshot(agentId: string, snapshot: WorldSnapshot): void {
-    const state = this.agents.get(agentId);
-    if (!state) return;
-    state.worldSnapshot = snapshot;
+  updateWorldSnapshot(agentId: string, snapshot: WorldSnapshot) {
+    const agent = this.agents.get(agentId);
+    if (!agent) return;
 
-    // 持久化到数据库（节流，每 10 秒保存一次）
+    agent.worldSnapshot = snapshot;
+
+    // 异步持久化
     this.persistWorldSnapshot(agentId, snapshot);
-  }
-
-  // 节流：避免频繁保存世界快照
-  private snapshotLastPersist: Map<string, number> = new Map();
-  private async persistWorldSnapshot(agentId: string, snapshot: WorldSnapshot) {
-    const now = Date.now();
-    const lastTime = this.snapshotLastPersist.get(agentId) || 0;
-    
-    if (now - lastTime < 10000) return; // 至少 10 秒保存一次
-    this.snapshotLastPersist.set(agentId, now);
-
-    try {
-      await agentWorldSnapshotDb.insert({
-        agent_id: agentId,
-        snapshot_data: snapshot as unknown as Record<string, unknown>,
-      });
-
-      // 清理旧快照（保留 30 条）
-      await agentWorldSnapshotDb.cleanupOldSnapshots(agentId, 30);
-    } catch (error) {
-      console.error(`持久化世界快照失败:`, error);
-    }
   }
 
   // 获取所有 Agent 状态
   getAllAgents(): AgentStatus[] {
-    return Array.from(this.agents.values()).map((s) => s.status);
+    return Array.from(this.agents.values())
+      .filter((s) => s.status != null)
+      .map((s) => s.status);
   }
 
   // 获取单个 Agent 状态
@@ -330,6 +154,18 @@ class AgentStateManager {
   // 获取连接数
   getAgentCount(): number {
     return this.agents.size;
+  }
+
+  // 获取在线 Agent 数
+  getOnlineAgentCount(): number {
+    return Array.from(this.agents.values()).filter((s) => s.status.connected).length;
+  }
+
+  // 清空所有内存数据
+  clearAll(): number {
+    const count = this.agents.size;
+    this.agents.clear();
+    return count;
   }
 
   // 从数据库加载所有 Agent（包括离线的，用于服务重启恢复）
@@ -368,6 +204,8 @@ class AgentStateManager {
           status,
           events: [],
           worldSnapshot: null,
+          builds: new Map(),
+          subscriptions: new Map(),
         });
       }
 
@@ -377,32 +215,64 @@ class AgentStateManager {
     }
   }
 
-  // 清空所有内存中的 Agent 数据
-  clearAll(): void {
-    this.agents.clear();
-    console.log('[AgentState] 已清空所有内存中的 Agent 数据');
+  // ============ 私有方法：持久化 ============
+
+  private async persistAgent(agentId: string) {
+    const agent = this.agents.get(agentId);
+    if (!agent) return;
+
+    try {
+      await agentDb.upsert({
+        id: agentId,
+        username: agent.status.username,
+        server_host: agent.status.world || undefined,
+        last_status: agent.status as unknown as Record<string, unknown>,
+        is_online: agent.status.connected,
+      });
+    } catch (error) {
+      console.error(`持久化 Agent ${agentId} 失败:`, error);
+    }
+  }
+
+  private async persistEvent(agentId: string, event: AgentEvent) {
+    try {
+      await agentDb.insertEvent({
+        agent_id: agentId,
+        event_type: event.type,
+        description: event.description,
+        event_data: event.data,
+      });
+    } catch (error) {
+      console.error(`持久化事件失败:`, error);
+      // 外键约束失败时，尝试先 upsert Agent
+      if (error instanceof Error && error.message.includes('foreign key')) {
+        try {
+          await this.persistAgent(agentId);
+          await agentDb.insertEvent({
+            agent_id: agentId,
+            event_type: event.type,
+            description: event.description,
+            event_data: event.data,
+          });
+        } catch (retryError) {
+          console.error(`重试持久化事件失败:`, retryError);
+        }
+      }
+    }
+  }
+
+  private async persistWorldSnapshot(agentId: string, snapshot: WorldSnapshot) {
+    try {
+      await agentDb.insertWorldSnapshot({
+        agent_id: agentId,
+        blocks: snapshot.blocks,
+        entities: snapshot.entities,
+      });
+    } catch (error) {
+      console.error(`持久化世界快照失败:`, error);
+    }
   }
 }
 
-// 导出单例
+// 单例导出
 export const agentStateManager = new AgentStateManager();
-
-// 便捷函数：创建标准事件
-export function createAgentEvent(
-  agentId: string,
-  type: EventType,
-  description: string,
-  data: Record<string, unknown> = {}
-): Omit<AgentEvent, 'id' | 'timestamp'> {
-  return {
-    agentId,
-    type,
-    description,
-    data,
-  };
-}
-
-// 便捷函数：创建位置相关描述
-export function formatPosition(pos: Position): string {
-  return `(${pos.x}, ${pos.y}, ${pos.z})`;
-}
