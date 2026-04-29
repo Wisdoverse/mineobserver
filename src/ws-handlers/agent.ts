@@ -41,27 +41,39 @@ export function setupAgentHandler(wss: WebSocketServer) {
             const payload = msg.payload as AgentRegisterPayload;
             const { agentId, username, serverHost, serverPort } = payload;
 
-            console.log(`[Agent] Registered: ${username} (${agentId})`);
+            const isReconnect = agentStateManager.hasAgent(agentId);
 
-            // 保存状态
+            console.log(`[Agent] ${isReconnect ? 'Reconnected' : 'Registered'}: ${username} (${agentId})`);
+
+            // 保存状态（register 内部处理了重连逻辑）
             agentStateManager.register(agentId, username, serverHost, serverPort);
             agentClients.set(agentId, ws);
             clientAgentId = agentId;
 
-            // 添加连接事件
+            // 添加连接/重连事件
             agentStateManager.addEvent(
               agentId,
-              createAgentEvent(agentId, 'connected', `${username} 已连接到服务器 ${serverHost}:${serverPort}`)
+              createAgentEvent(agentId, 'connected', `${username} ${isReconnect ? '已重新连接' : '已连接'}到服务器 ${serverHost}:${serverPort}`)
             );
 
-            // 广播给观测者
-            broadcastToObservers({
-              type: 'agent:registered',
-              payload: {
-                agentId,
-                status: agentStateManager.getAgentStatus(agentId),
-              },
-            });
+            // 广播给观测者：重连用 status:update，新注册用 agent:registered
+            if (isReconnect) {
+              broadcastToObservers({
+                type: 'status:update',
+                payload: {
+                  agentId,
+                  status: agentStateManager.getAgentStatus(agentId),
+                },
+              });
+            } else {
+              broadcastToObservers({
+                type: 'agent:registered',
+                payload: {
+                  agentId,
+                  status: agentStateManager.getAgentStatus(agentId),
+                },
+              });
+            }
 
             // 回复 Agent
             ws.send(JSON.stringify({
@@ -187,12 +199,23 @@ export function setupAgentHandler(wss: WebSocketServer) {
       if (clientAgentId) {
         console.log(`[Agent] Disconnected: ${clientAgentId}`);
         agentClients.delete(clientAgentId);
-        agentStateManager.unregister(clientAgentId);
 
-        // 广播给观测者
+        // 标记离线而非删除
+        agentStateManager.disconnect(clientAgentId);
+
+        // 添加断连事件
+        const status = agentStateManager.getAgentStatus(clientAgentId);
+        if (status) {
+          agentStateManager.addEvent(
+            clientAgentId,
+            createAgentEvent(clientAgentId, 'disconnected', `${status.username} 已断开连接`)
+          );
+        }
+
+        // 广播状态更新（离线），而不是删除
         broadcastToObservers({
-          type: 'agent:unregistered',
-          payload: { agentId: clientAgentId },
+          type: 'status:update',
+          payload: { agentId: clientAgentId, status: agentStateManager.getAgentStatus(clientAgentId) },
         });
       }
       observerClients.delete(ws);

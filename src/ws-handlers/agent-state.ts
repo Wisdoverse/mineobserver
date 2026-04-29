@@ -67,6 +67,33 @@ class AgentStateManager {
 
   // 注册新 Agent
   async register(agentId: string, username: string, serverHost: string, serverPort: number): Promise<AgentStatus> {
+    // 检查是否是已注册的 Agent 重连
+    const existingState = this.agents.get(agentId);
+    if (existingState) {
+      // Agent 重连：恢复在线状态，保留原有数据
+      existingState.status.connected = true;
+      existingState.status.username = username;
+      existingState.status.world = serverHost;
+      existingState.status.lastUpdated = Date.now();
+
+      // 持久化在线状态到数据库
+      try {
+        await agentDb.upsert({
+          id: agentId,
+          username,
+          server_host: serverHost,
+          server_port: serverPort,
+          last_status: existingState.status as unknown as Record<string, unknown>,
+          is_online: true,
+        });
+      } catch (error) {
+        console.error(`重连 Agent ${agentId} 更新数据库失败:`, error);
+      }
+
+      return existingState.status;
+    }
+
+    // 新 Agent 注册：创建默认状态
     const status: AgentStatus = {
       id: agentId,
       username,
@@ -131,16 +158,21 @@ class AgentStateManager {
     return status;
   }
 
-  // 注销 Agent
-  async unregister(agentId: string): Promise<void> {
+  // Agent 断开连接 - 标记离线，保留内存数据
+  async disconnect(agentId: string): Promise<void> {
+    const state = this.agents.get(agentId);
+    if (state) {
+      // 标记为离线，保留所有数据
+      state.status.connected = false;
+      state.status.lastUpdated = Date.now();
+    }
+
     // 更新数据库中的在线状态
     try {
       await agentDb.updateOnlineStatus(agentId, false);
     } catch (error) {
       console.error(`更新 Agent ${agentId} 离线状态失败:`, error);
     }
-
-    this.agents.delete(agentId);
   }
 
   // 更新 Agent 状态
@@ -249,6 +281,11 @@ class AgentStateManager {
     return this.agents.get(agentId)?.status ?? null;
   }
 
+  // 检查 Agent 是否存在于内存中（包括离线的）
+  hasAgent(agentId: string): boolean {
+    return this.agents.has(agentId);
+  }
+
   // 获取 Agent 事件
   getAgentEvents(agentId: string): AgentEvent[] {
     return this.agents.get(agentId)?.events ?? [];
@@ -259,29 +296,24 @@ class AgentStateManager {
     return this.agents.get(agentId)?.worldSnapshot ?? null;
   }
 
-  // 检查 Agent 是否存在
-  hasAgent(agentId: string): boolean {
-    return this.agents.has(agentId);
-  }
-
   // 获取连接数
   getAgentCount(): number {
     return this.agents.size;
   }
 
-  // 从数据库加载所有在线 Agent（用于服务重启恢复）
+  // 从数据库加载所有 Agent（包括离线的，用于服务重启恢复）
   async loadFromDb(): Promise<void> {
     try {
-      const onlineAgents = await agentDb.getOnlineAgents();
+      const allAgents = await agentDb.getAllAgents();
       
-      for (const agent of onlineAgents) {
+      for (const agent of allAgents) {
         const lastStatus = (agent.last_status || {}) as Record<string, unknown>;
         
         // 恢复内存状态
         const status: AgentStatus = {
           id: agent.id,
           username: agent.username,
-          connected: true, // 重启后假设已连接
+          connected: agent.is_online, // 按数据库中的在线状态恢复
           position: (lastStatus.position as Position) || { x: 0, y: 64, z: 0 },
           health: (lastStatus.health as number) || 20,
           maxHealth: (lastStatus.maxHealth as number) || 20,
@@ -308,7 +340,7 @@ class AgentStateManager {
         });
       }
 
-      console.log(`从数据库加载了 ${onlineAgents.length} 个在线 Agent`);
+      console.log(`从数据库加载了 ${allAgents.length} 个 Agent（在线: ${allAgents.filter(a => a.is_online).length}）`);
     } catch (error) {
       console.error(`从数据库加载 Agent 失败:`, error);
     }
