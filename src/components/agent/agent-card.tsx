@@ -182,16 +182,16 @@ export function AgentCard({ agent, events, worldSnapshot, isSelected, onClick }:
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      {/* Tabs - 阻止冒泡，点击 tab 不跳转详情 */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} onClick={(e) => e.stopPropagation()}>
         <TabsList className="w-full rounded-none border-t">
-          <TabsTrigger value="status" className="flex-1">
+          <TabsTrigger value="status" className="flex-1" onClick={(e) => e.stopPropagation()}>
             背包
           </TabsTrigger>
-          <TabsTrigger value="map" className="flex-1">
+          <TabsTrigger value="map" className="flex-1" onClick={(e) => e.stopPropagation()}>
             地图
           </TabsTrigger>
-          <TabsTrigger value="events" className="flex-1">
+          <TabsTrigger value="events" className="flex-1" onClick={(e) => e.stopPropagation()}>
             日志
           </TabsTrigger>
         </TabsList>
