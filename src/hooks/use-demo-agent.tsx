@@ -104,7 +104,9 @@ export function useDemoAgent() {
   const startDemoAgent = useCallback((config: DemoAgentConfig) => {
     connect();
 
-    const agentId = `demo-${config.username}-${Date.now()}`;
+    // 生成 agentId（不含随机部分，确保一致性）
+    const timestamp = Date.now();
+    const agentId = `demo-${config.username}-${timestamp}`;
     const initialPosition = { x: 0, y: 64, z: 0 };
 
     // 等待 WebSocket 连接
@@ -127,7 +129,7 @@ export function useDemoAgent() {
         },
       }));
 
-      // 初始化状态
+      // 初始化状态 - 使用固定值避免 hydration 不匹配
       const initialStatus = {
         agentId,
         status: {
@@ -150,13 +152,13 @@ export function useDemoAgent() {
           },
           world: config.serverHost,
           dimension: 'overworld',
-          yaw: Math.random() * 360,
+          yaw: 180,  // 固定值
           pitch: 0,
           isOnGround: true,
           isSleeping: false,
           isSprinting: false,
           isSneaking: false,
-          lastUpdated: Date.now(),
+          lastUpdated: timestamp,
         },
       };
 

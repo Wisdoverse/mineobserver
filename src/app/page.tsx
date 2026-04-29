@@ -45,7 +45,7 @@ export default function ObserverPage() {
   const selectedEvents = selectedAgentId ? events.get(selectedAgentId) || [] : [];
   const demoAgentCount = activeAgents.size;
 
-  const timeSinceUpdate = Math.round((currentTime - lastUpdate) / 1000);
+  const timeSinceUpdate = lastUpdate > 0 ? Math.round((currentTime - lastUpdate) / 1000) : 0;
 
   // 自动选择第一个 Agent
   useEffect(() => {
