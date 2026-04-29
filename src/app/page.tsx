@@ -9,12 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MiniMap } from '@/components/agent/mini-map';
 import { InventoryGrid } from '@/components/agent/inventory-grid';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import type { AgentStatus, WorldSnapshot } from '@/lib/types/agent';
 
 export default function ObserverPage() {
   const [viewMode, setViewMode] = useState<'landing' | 'list' | 'detail'>('landing');
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [disconnectConfirm, setDisconnectConfirm] = useState<{ open: boolean; agentId: string | null; username: string | null }>({ open: false, agentId: null, username: null });
 
   const { agents, events, worldSnapshots, isConnected } = useAgentObserver();
   const { activeAgents, startDemoAgent, stopDemoAgent } = useDemoAgent();
@@ -284,7 +286,7 @@ export default function ObserverPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => stopDemoAgent(selectedAgentId!)}
+                  onClick={() => setDisconnectConfirm({ open: true, agentId: selectedAgentId, username: selectedAgent?.username || null })}
                   className="text-red-500 border-red-200 hover:bg-red-50"
                 >
                   断开连接
@@ -439,6 +441,41 @@ export default function ObserverPage() {
           </main>
         </div>
       )}
+
+      {/* 断开连接确认对话框 */}
+      <AlertDialog open={disconnectConfirm.open} onOpenChange={(open) => setDisconnectConfirm((prev) => ({ ...prev, open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认断开连接</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要断开与 <span className="font-semibold text-foreground">{disconnectConfirm.username}</span> 的连接吗？
+              {activeAgents.has(disconnectConfirm.agentId || '') && (
+                <span className="block mt-2 text-amber-600">
+                  这是演示 Agent，断开后配置将被清除。
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (disconnectConfirm.agentId) {
+                  stopDemoAgent(disconnectConfirm.agentId);
+                  // 如果是从详情页断开的，退回到列表页
+                  if (viewMode === 'detail' && disconnectConfirm.agentId === selectedAgentId) {
+                    setViewMode('list');
+                    setSelectedAgentId(null);
+                  }
+                }
+              }}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              确认断开
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
