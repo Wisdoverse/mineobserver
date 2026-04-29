@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     root: path.resolve(__dirname),
   },
   // 输出文件追踪根目录
-  outputFileTracingRoot: path.resolve(__dirname),
+  // outputFileTracingRoot: path.resolve(__dirname),
   /* config options here */
   allowedDevOrigins: ['*.dev.coze.site'],
   images: {
