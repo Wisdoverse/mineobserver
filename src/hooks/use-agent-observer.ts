@@ -93,6 +93,20 @@ export function useAgentObserver(): UseAgentObserverReturn {
         });
         break;
       }
+
+      case 'admin:data-cleared': {
+        // 管理员清空了数据，清除前端所有状态和 localStorage
+        console.log('[Observer] Data cleared by admin, resetting all state');
+        setAgents(new Map());
+        setEvents(new Map());
+        setWorldSnapshots(new Map());
+        try {
+          localStorage.removeItem('mineworld-demo-agents');
+        } catch {
+          // ignore
+        }
+        break;
+      }
     }
   }, []);
 

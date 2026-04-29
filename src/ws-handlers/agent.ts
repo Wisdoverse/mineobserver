@@ -180,6 +180,27 @@ export function setupAgentHandler(wss: WebSocketServer) {
             break;
           }
 
+          case 'admin:clear': {
+            // 管理员清空内存中的所有 Agent
+            const clearScope = (msg.payload as { scope?: string })?.scope || 'all';
+            console.log('[Admin] Clear memory, scope:', clearScope);
+            const clearedAgents = agentStateManager.clearAll();
+            // 通知所有 Observer 数据已清空
+            broadcastToObservers({
+              type: 'admin:data-cleared',
+              payload: { scope: clearScope },
+            });
+            broadcastToObservers({
+              type: 'agents:list',
+              payload: { agents: agentStateManager.getAllAgents() },
+            });
+            ws.send(JSON.stringify({
+              type: 'admin:clear:ack',
+              payload: { success: true, cleared: clearedAgents },
+            }));
+            break;
+          }
+
           case 'observer:register': {
             // 观测者注册
             console.log('[Observer] New observer connected');

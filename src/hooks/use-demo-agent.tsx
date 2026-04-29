@@ -165,9 +165,8 @@ export function useDemoAgent() {
       const ws = await connectWs();
       console.log('[Demo] WebSocket ready, starting agent:', config.username);
 
-      // 生成 agentId（如果是自动恢复，使用原来的 ID）
-      const timestamp = Date.now();
-      const agentId = existingAgentId || `demo-${config.username}-${timestamp}`;
+      // 生成 agentId：基于用户名固定生成，确保同一用户名始终对应同一 ID
+      const agentId = existingAgentId || `demo-${config.username}`;
       const initialPosition = { x: 0, y: 64, z: 0 };
 
       // 发送注册消息
@@ -215,7 +214,7 @@ export function useDemoAgent() {
           isSleeping: false,
           isSprinting: false,
           isSneaking: false,
-          lastUpdated: timestamp,
+          lastUpdated: Date.now(),
         },
       };
       ws.send(JSON.stringify({ type: 'agent:status:update', payload: initialStatus }));

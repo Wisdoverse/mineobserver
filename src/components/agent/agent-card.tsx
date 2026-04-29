@@ -82,7 +82,7 @@ export function AgentCard({ agent, events, worldSnapshot, isSelected, onClick }:
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                <span className="text-lg font-bold text-white">{agent.username[0]?.toUpperCase()}</span>
+                <span className="text-lg font-bold text-white">{(agent.username ?? '?').charAt(0).toUpperCase()}</span>
               </div>
               <div
                 className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${
@@ -91,7 +91,7 @@ export function AgentCard({ agent, events, worldSnapshot, isSelected, onClick }:
               />
             </div>
             <div>
-              <h3 className="font-semibold">{agent.username}</h3>
+              <h3 className="font-semibold">{agent.username || 'Unknown'}</h3>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="w-3 h-3" />
                 <span className="font-mono text-xs">

@@ -235,7 +235,38 @@ class AgentStateManager {
       // 清理旧事件（保留 200 条）
       await agentEventDb.cleanupOldEvents(agentId, 200);
     } catch (error) {
-      console.error(`持久化事件失败:`, error);
+      // 外键约束失败时，先确保 agent 记录存在再重试
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes('foreign key') || errMsg.includes('fkey')) {
+        // 确保数据库中存在 agent 记录（防止清空数据后外键约束失败）
+        const state = this.agents.get(agentId);
+        if (state) {
+          try {
+            await agentDb.upsert({
+              id: agentId,
+              username: state.status.username ?? 'unknown',
+              server_host: state.status.world ?? '',
+              server_port: 25565,
+              last_status: state.status as unknown as Record<string, unknown>,
+              is_online: true,
+            });
+          } catch {
+            // upsert 失败不阻塞事件插入
+          }
+        }
+        try {
+          await agentEventDb.insert({
+            agent_id: agentId,
+            event_type: event.type,
+            description: event.description,
+            event_data: event.data,
+          });
+        } catch (retryError) {
+          console.error(`持久化事件重试失败:`, retryError);
+        }
+      } else {
+        console.error(`持久化事件失败:`, error);
+      }
     }
   }
 
@@ -344,6 +375,12 @@ class AgentStateManager {
     } catch (error) {
       console.error(`从数据库加载 Agent 失败:`, error);
     }
+  }
+
+  // 清空所有内存中的 Agent 数据
+  clearAll(): void {
+    this.agents.clear();
+    console.log('[AgentState] 已清空所有内存中的 Agent 数据');
   }
 }
 

@@ -465,7 +465,7 @@ export default function ObserverPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from(allAgents.entries()).map(([agentId, agent]) => (
+                {Array.from(allAgents.entries()).filter(([, agent]) => agent != null).map(([agentId, agent]) => (
                   <AgentCard
                     key={agentId}
                     agent={agent}
