@@ -49,15 +49,15 @@ export function useAgentObserver(): UseAgentObserverReturn {
       }
 
       case 'agent:unregistered': {
+        // 标记 Agent 为离线，而不是删除（保留历史数据）
         const { agentId } = msg.payload as { agentId: string };
         setAgents((prev) => {
           const next = new Map(prev);
-          next.delete(agentId);
-          return next;
-        });
-        setEvents((prev) => {
-          const next = new Map(prev);
-          next.delete(agentId);
+          const existing = next.get(agentId);
+          if (existing) {
+            // 保留 Agent 但标记为离线
+            next.set(agentId, { ...existing, connected: false });
+          }
           return next;
         });
         break;

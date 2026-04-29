@@ -79,17 +79,21 @@ export function setupAgentHandler(wss: WebSocketServer) {
           }
 
           case 'agent:status:update': {
-            console.log(`[Debug] Received agent:status:update for agentId:`, (msg.payload as StatusUpdatePayload)?.agentId);
             // 状态更新
+            if (!msg.payload) {
+              debug('[WS] Ignoring status:update without payload');
+              break;
+            }
             const payload = msg.payload as StatusUpdatePayload;
             const { agentId, status } = payload;
 
-            console.log(`[Debug] Updating status for agentId: ${agentId}`);
+            if (!agentId) {
+              debug('[WS] Ignoring status:update without agentId');
+              break;
+            }
 
             const prevStatus = agentStateManager.getAgentStatus(agentId);
             const updatedStatus = agentStateManager.updateStatus(agentId, status);
-
-            console.log(`[Debug] prevStatus:`, prevStatus, `updatedStatus:`, updatedStatus);
 
             if (updatedStatus && prevStatus) {
               // 检测位置变化
