@@ -1,4 +1,4 @@
-// Agent 状态管理器 - 服务端单例
+// Agent 状态管理器 - 服务端单例（带数据库持久化）
 
 import type {
   AgentStatus,
@@ -7,6 +7,7 @@ import type {
   Position,
   WorldSnapshot,
 } from '@/lib/types/agent';
+import { agentDb, agentEventDb, agentWorldSnapshotDb } from '@/storage/database/agent-db';
 
 interface AgentState {
   status: AgentStatus;
@@ -17,9 +18,55 @@ interface AgentState {
 class AgentStateManager {
   private agents: Map<string, AgentState> = new Map();
   private maxEventsPerAgent = 100;
+  private dbSyncInterval: NodeJS.Timeout | null = null;
+  private pendingDbSyncs: Set<string> = new Set();
+
+  constructor() {
+    // 定期同步到数据库
+    this.startDbSync();
+  }
+
+  // 启动定期数据库同步
+  private startDbSync() {
+    // 每 30 秒同步一次在线 Agent 的状态到数据库
+    this.dbSyncInterval = setInterval(async () => {
+      await this.syncAllToDb();
+    }, 30000);
+  }
+
+  // 停止数据库同步
+  public stop() {
+    if (this.dbSyncInterval) {
+      clearInterval(this.dbSyncInterval);
+      this.dbSyncInterval = null;
+    }
+  }
+
+  // 同步所有 Agent 到数据库
+  private async syncAllToDb() {
+    const agents = this.getAllAgents();
+    for (const status of agents) {
+      if (status.connected) {
+        await this.syncAgentToDb(status.id);
+      }
+    }
+  }
+
+  // 同步单个 Agent 到数据库
+  private async syncAgentToDb(agentId: string) {
+    try {
+      const status = this.getAgentStatus(agentId);
+      if (!status) return;
+
+      await agentDb.updateStatus(agentId, status as unknown as Record<string, unknown>);
+      this.pendingDbSyncs.delete(agentId);
+    } catch (error) {
+      console.error(`同步 Agent ${agentId} 到数据库失败:`, error);
+    }
+  }
 
   // 注册新 Agent
-  register(agentId: string, username: string, serverHost: string, _serverPort: number): AgentStatus {
+  async register(agentId: string, username: string, serverHost: string, serverPort: number): Promise<AgentStatus> {
     const status: AgentStatus = {
       id: agentId,
       username,
@@ -49,11 +96,50 @@ class AgentStateManager {
       worldSnapshot: null,
     });
 
+    // 持久化到数据库
+    try {
+      await agentDb.upsert({
+        id: agentId,
+        username,
+        server_host: serverHost,
+        server_port: serverPort,
+        last_status: status as unknown as Record<string, unknown>,
+        is_online: true,
+      });
+    } catch (error) {
+      console.error(`注册 Agent ${agentId} 到数据库失败:`, error);
+    }
+
+    // 从数据库加载历史事件
+    try {
+      const events = await agentEventDb.getRecentByAgent(agentId, 100);
+      const state = this.agents.get(agentId);
+      if (state && events) {
+        state.events = events.map((e) => ({
+          id: String(e.id),
+          agentId: e.agent_id,
+          type: e.event_type as EventType,
+          description: e.description || '',
+          data: (e.event_data || {}) as Record<string, unknown>,
+          timestamp: new Date(e.created_at).getTime(),
+        }));
+      }
+    } catch (error) {
+      console.error(`加载 Agent ${agentId} 历史事件失败:`, error);
+    }
+
     return status;
   }
 
   // 注销 Agent
-  unregister(agentId: string): void {
+  async unregister(agentId: string): Promise<void> {
+    // 更新数据库中的在线状态
+    try {
+      await agentDb.updateOnlineStatus(agentId, false);
+    } catch (error) {
+      console.error(`更新 Agent ${agentId} 离线状态失败:`, error);
+    }
+
     this.agents.delete(agentId);
   }
 
@@ -68,6 +154,14 @@ class AgentStateManager {
       ...updates,
       lastUpdated: Date.now(),
     };
+
+    // 标记需要同步到数据库
+    this.pendingDbSyncs.add(agentId);
+
+    // 批量同步（每 5 秒或累积 10 个变更）
+    if (this.pendingDbSyncs.size >= 10) {
+      this.syncAgentToDb(agentId);
+    }
 
     return state.status;
   }
@@ -90,7 +184,27 @@ class AgentStateManager {
       state.events = state.events.slice(0, this.maxEventsPerAgent);
     }
 
+    // 持久化到数据库（异步，不阻塞）
+    this.persistEvent(agentId, event);
+
     return newEvent;
+  }
+
+  // 持久化事件到数据库
+  private async persistEvent(agentId: string, event: Omit<AgentEvent, 'id' | 'timestamp'>) {
+    try {
+      await agentEventDb.insert({
+        agent_id: agentId,
+        event_type: event.type,
+        description: event.description,
+        event_data: event.data,
+      });
+
+      // 清理旧事件（保留 200 条）
+      await agentEventDb.cleanupOldEvents(agentId, 200);
+    } catch (error) {
+      console.error(`持久化事件失败:`, error);
+    }
   }
 
   // 更新世界快照
@@ -98,6 +212,31 @@ class AgentStateManager {
     const state = this.agents.get(agentId);
     if (!state) return;
     state.worldSnapshot = snapshot;
+
+    // 持久化到数据库（节流，每 10 秒保存一次）
+    this.persistWorldSnapshot(agentId, snapshot);
+  }
+
+  // 节流：避免频繁保存世界快照
+  private snapshotLastPersist: Map<string, number> = new Map();
+  private async persistWorldSnapshot(agentId: string, snapshot: WorldSnapshot) {
+    const now = Date.now();
+    const lastTime = this.snapshotLastPersist.get(agentId) || 0;
+    
+    if (now - lastTime < 10000) return; // 至少 10 秒保存一次
+    this.snapshotLastPersist.set(agentId, now);
+
+    try {
+      await agentWorldSnapshotDb.insert({
+        agent_id: agentId,
+        snapshot_data: snapshot as unknown as Record<string, unknown>,
+      });
+
+      // 清理旧快照（保留 30 条）
+      await agentWorldSnapshotDb.cleanupOldSnapshots(agentId, 30);
+    } catch (error) {
+      console.error(`持久化世界快照失败:`, error);
+    }
   }
 
   // 获取所有 Agent 状态
@@ -128,6 +267,51 @@ class AgentStateManager {
   // 获取连接数
   getAgentCount(): number {
     return this.agents.size;
+  }
+
+  // 从数据库加载所有在线 Agent（用于服务重启恢复）
+  async loadFromDb(): Promise<void> {
+    try {
+      const onlineAgents = await agentDb.getOnlineAgents();
+      
+      for (const agent of onlineAgents) {
+        const lastStatus = (agent.last_status || {}) as Record<string, unknown>;
+        
+        // 恢复内存状态
+        const status: AgentStatus = {
+          id: agent.id,
+          username: agent.username,
+          connected: true, // 重启后假设已连接
+          position: (lastStatus.position as Position) || { x: 0, y: 64, z: 0 },
+          health: (lastStatus.health as number) || 20,
+          maxHealth: (lastStatus.maxHealth as number) || 20,
+          food: (lastStatus.food as number) || 20,
+          saturation: (lastStatus.saturation as number) || 5,
+          gamemode: (lastStatus.gamemode as AgentStatus['gamemode']) || 'survival',
+          inventory: (lastStatus.inventory as AgentStatus['inventory']) || [],
+          equipment: (lastStatus.equipment as AgentStatus['equipment']) || {},
+          world: agent.server_host || '',
+          dimension: (lastStatus.dimension as string) || 'overworld',
+          yaw: (lastStatus.yaw as number) || 0,
+          pitch: (lastStatus.pitch as number) || 0,
+          isOnGround: (lastStatus.isOnGround as boolean) ?? true,
+          isSleeping: (lastStatus.isSleeping as boolean) ?? false,
+          isSprinting: (lastStatus.isSprinting as boolean) ?? false,
+          isSneaking: (lastStatus.isSneaking as boolean) ?? false,
+          lastUpdated: agent.last_seen_at ? new Date(agent.last_seen_at).getTime() : Date.now(),
+        };
+
+        this.agents.set(agent.id, {
+          status,
+          events: [],
+          worldSnapshot: null,
+        });
+      }
+
+      console.log(`从数据库加载了 ${onlineAgents.length} 个在线 Agent`);
+    } catch (error) {
+      console.error(`从数据库加载 Agent 失败:`, error);
+    }
   }
 }
 

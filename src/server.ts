@@ -6,6 +6,7 @@ import type { IncomingMessage } from 'http';
 import type { Duplex } from 'stream';
 
 import { setupAgentHandler } from './ws-handlers/agent';
+import { agentStateManager } from './ws-handlers/agent-state';
 
 const dev = process.env.COZE_PROJECT_ENV !== 'PROD';
 const hostname = process.env.HOSTNAME || 'localhost';
@@ -39,7 +40,15 @@ function handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer) {
 const agentWss = registerWsEndpoint('/ws/agent');
 setupAgentHandler(agentWss);
 
-app.prepare().then(() => {
+app.prepare().then(async () => {
+  // 从数据库加载在线 Agent
+  try {
+    await agentStateManager.loadFromDb();
+    console.log('> 已从数据库加载 Agent 状态');
+  } catch (error) {
+    console.error('> 从数据库加载 Agent 状态失败:', error);
+  }
+
   const server = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url!, true);
