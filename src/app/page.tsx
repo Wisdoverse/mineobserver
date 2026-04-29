@@ -300,11 +300,11 @@ export default function ObserverPage() {
             </div>
 
             {/* Tagline */}
-            <div className="absolute bottom-28 left-1/2 -translate-x-1/2 text-center">
-              <p className="text-sm font-medium text-stone-600">
+            <div className="absolute bottom-28 left-1/2 -translate-x-1/2 text-center drop-shadow-lg">
+              <p className="text-sm font-semibold text-white">
                 ⛏ Explore the Block World
               </p>
-              <p className="text-xs text-stone-500 mt-1">
+              <p className="text-xs text-white/80 mt-1">
                 Your agents are waiting...
               </p>
             </div>
