@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Activity, Users, Wifi, WifiOff, RefreshCw, Server, Pause, Trash2, Bot, ArrowLeft, MapPin, Heart, Utensils, Backpack, Map, Clock, Move, Eye } from 'lucide-react';
 import { useAgentObserver } from '@/hooks/use-agent-observer';
 import { useDemoAgent, AddDemoAgentDialog } from '@/hooks/use-demo-agent';
+import { MiniMap, InventoryGrid } from '@/components/agent';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +26,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
 import type { AgentStatus, AgentEvent, WorldSnapshot } from '@/lib/types/agent';
 
 function getEventEmoji(type: string): string {
@@ -50,10 +50,10 @@ function getEventEmoji(type: string): string {
   return emojiMap[type] || '📌';
 }
 
-function AgentCardView({ agent, events, worldSnapshot, onClick, onStop }: {
+// 列表页的卡片组件
+function AgentCardView({ agent, events, onClick, onStop }: {
   agent: AgentStatus;
   events: AgentEvent[];
-  worldSnapshot?: WorldSnapshot;
   onClick: () => void;
   onStop?: () => void;
 }) {
@@ -82,8 +82,6 @@ function AgentCardView({ agent, events, worldSnapshot, onClick, onStop }: {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-
-
         {/* 最近事件 */}
         {recentEvents.length > 0 && (
           <div className="space-y-1">
@@ -124,6 +122,7 @@ function AgentCardView({ agent, events, worldSnapshot, onClick, onStop }: {
   );
 }
 
+// 详情页组件
 function AgentDetailView({ agent, events, worldSnapshot, onBack }: {
   agent: AgentStatus;
   events: AgentEvent[];
@@ -131,6 +130,26 @@ function AgentDetailView({ agent, events, worldSnapshot, onBack }: {
   onBack: () => void;
 }) {
   const recentEvents = events.slice(-20).reverse();
+  
+  // 转换世界快照为 MiniMap 需要的格式
+  const miniMapBlocks = (worldSnapshot?.blocks || []).map(b => ({
+    position: b.position,
+    type: b.type,
+    name: b.name
+  }));
+  
+  const miniMapEntities = (worldSnapshot?.entities || []).map(e => ({
+    type: e.type,
+    position: e.position,
+    name: e.type,
+    distance: Math.sqrt(
+      Math.pow(e.position.x - agent.position.x, 2) +
+      Math.pow(e.position.z - agent.position.z, 2)
+    )
+  }));
+  
+  // 转换背包数据 - 直接使用 agent.inventory
+  const inventoryItems = agent.inventory || [];
   
   return (
     <div className="space-y-6">
@@ -164,136 +183,177 @@ function AgentDetailView({ agent, events, worldSnapshot, onBack }: {
         </Badge>
       </div>
 
-      {/* 状态卡片网格 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-sm flex items-center gap-1">
-              <MapPin className="w-4 h-4" /> 坐标
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 pt-0">
-            <div className="font-mono text-sm space-y-0.5">
-              <div>X: {agent.position.x}</div>
-              <div>Y: {agent.position.y}</div>
-              <div>Z: {agent.position.z}</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-sm flex items-center gap-1">
-              <Eye className="w-4 h-4" /> 视角
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 pt-0">
-            <div className="font-mono text-sm">
-              <div>Yaw: {agent.yaw.toFixed(1)}°</div>
-              <div>Pitch: {agent.pitch.toFixed(1)}°</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-sm flex items-center gap-1">
-              <Activity className="w-4 h-4" /> 状态
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 pt-0">
-            <div className="font-mono text-sm capitalize">
-              <div>{agent.gamemode}</div>
-              <div className="text-muted-foreground">{agent.dimension}</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-sm flex items-center gap-1">
-              <Move className="w-4 h-4" /> 速度
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 pt-0">
-            <div className="font-mono text-sm">
-              {agent.velocity
-                ? `${agent.velocity.x.toFixed(2)}, ${agent.velocity.y.toFixed(2)}, ${agent.velocity.z.toFixed(2)}`
-                : 'N/A'}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 生命值和饥饿值 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-sm flex items-center gap-1">
-              <Heart className="w-4 h-4 text-red-500" /> 生命值
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 pt-0">
-            <div className="flex items-center gap-3">
-              <Progress value={(agent.health / agent.maxHealth) * 100} className="h-3 flex-1" />
-              <span className="font-mono text-sm">{agent.health} / {agent.maxHealth}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-sm flex items-center gap-1">
-              <Utensils className="w-4 h-4 text-orange-500" /> 饥饿值
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 pt-0">
-            <div className="flex items-center gap-3">
-              <Progress value={(agent.food / 20) * 100} className="h-3 flex-1" />
-              <span className="font-mono text-sm">{agent.food} / 20</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 事件日志 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" /> 事件日志
-          </CardTitle>
-          <CardDescription>Agent 的最近活动记录</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 max-h-80 overflow-y-auto">
-            {recentEvents.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                暂无事件记录
-              </p>
-            ) : (
-              recentEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-                >
-                  <div className="text-2xl">{getEventEmoji(event.type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <Badge variant="outline" className="text-xs">
-                        {event.type}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(event.timestamp).toLocaleString('zh-CN')}
-                      </span>
-                    </div>
-                    <p className="text-sm mt-1">{event.description}</p>
-                  </div>
+      {/* 左栏：状态和小地图 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* 状态卡片 */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* 状态卡片网格 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="p-3 pb-1">
+                <CardTitle className="text-sm flex items-center gap-1">
+                  <MapPin className="w-4 h-4" /> 坐标
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <div className="font-mono text-sm space-y-0.5">
+                  <div>X: {agent.position.x}</div>
+                  <div>Y: {agent.position.y}</div>
+                  <div>Z: {agent.position.z}</div>
                 </div>
-              ))
-            )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="p-3 pb-1">
+                <CardTitle className="text-sm flex items-center gap-1">
+                  <Eye className="w-4 h-4" /> 视角
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <div className="font-mono text-sm">
+                  <div>Yaw: {agent.yaw.toFixed(1)}°</div>
+                  <div>Pitch: {agent.pitch.toFixed(1)}°</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="p-3 pb-1">
+                <CardTitle className="text-sm flex items-center gap-1">
+                  <Activity className="w-4 h-4" /> 状态
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <div className="font-mono text-sm capitalize">
+                  <div>{agent.gamemode}</div>
+                  <div className="text-muted-foreground">{agent.dimension}</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="p-3 pb-1">
+                <CardTitle className="text-sm flex items-center gap-1">
+                  <Move className="w-4 h-4" /> 速度
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <div className="font-mono text-sm">
+                  {agent.velocity
+                    ? `${agent.velocity.x.toFixed(2)}, ${agent.velocity.y.toFixed(2)}, ${agent.velocity.z.toFixed(2)}`
+                    : 'N/A'}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* 生命值和饥饿值 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="p-3 pb-1">
+                <CardTitle className="text-sm flex items-center gap-1">
+                  <Heart className="w-4 h-4 text-red-500" /> 生命值
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <div className="flex items-center gap-3">
+                  <Progress value={(agent.health / (agent.maxHealth || 20)) * 100} className="h-3 flex-1" />
+                  <span className="font-mono text-sm">{agent.health} / {agent.maxHealth || 20}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="p-3 pb-1">
+                <CardTitle className="text-sm flex items-center gap-1">
+                  <Utensils className="w-4 h-4 text-orange-500" /> 饥饿值
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <div className="flex items-center gap-3">
+                  <Progress value={(agent.food / 20) * 100} className="h-3 flex-1" />
+                  <span className="font-mono text-sm">{agent.food} / 20</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 事件日志 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5" /> 事件日志
+              </CardTitle>
+              <CardDescription>Agent 的最近活动记录</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {recentEvents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    暂无事件记录
+                  </p>
+                ) : (
+                  recentEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                    >
+                      <div className="text-2xl">{getEventEmoji(event.type)}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline" className="text-xs">
+                            {event.type}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(event.timestamp).toLocaleString('zh-CN')}
+                          </span>
+                        </div>
+                        <p className="text-sm mt-1">{event.description}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 右栏：小地图和背包 */}
+        <div className="space-y-4">
+          {/* 小地图 */}
+          <Card>
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Map className="w-4 h-4" /> 周围环境
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 pt-0">
+              <MiniMap
+                position={agent.position}
+                yaw={agent.yaw}
+                blocks={miniMapBlocks}
+                entities={miniMapEntities}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 背包 */}
+          <Card>
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Backpack className="w-4 h-4" /> 背包物品
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 pt-0">
+              <InventoryGrid
+                inventory={inventoryItems}
+                equipment={agent.equipment}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
@@ -526,7 +586,6 @@ export default function ObserverPage() {
                   key={agent.id}
                   agent={agent}
                   events={events.get(agent.id) || []}
-                  worldSnapshot={worldSnapshots.get(agent.id)}
                   onClick={() => handleAgentClick(agent.id)}
                   onStop={agent.id.startsWith('demo-') ? () => stopDemoAgent(agent.id) : undefined}
                 />
