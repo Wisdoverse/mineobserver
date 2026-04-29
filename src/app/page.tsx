@@ -1,599 +1,393 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Activity, Users, Wifi, WifiOff, RefreshCw, Server, Pause, Trash2, Bot, ArrowLeft, MapPin, Heart, Utensils, Backpack, Map, Clock, Move, Eye } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { 
+  Bot, Users, Wifi, WifiOff, ChevronLeft, Map, Backpack, 
+  Activity, Clock, Heart, Cookie, Footprints, Eye, Compass, Grid3X3
+} from 'lucide-react';
+import { AgentCard, MiniMap, InventoryGrid } from '@/components/agent';
 import { useAgentObserver } from '@/hooks/use-agent-observer';
-import { useDemoAgent, AddDemoAgentDialog } from '@/hooks/use-demo-agent';
-import { MiniMap, InventoryGrid } from '@/components/agent';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import type { AgentStatus, AgentEvent, WorldSnapshot } from '@/lib/types/agent';
-
-function getEventEmoji(type: string): string {
-  const emojiMap: Record<string, string> = {
-    move: '🚶',
-    jump: '🦘',
-    attack: '⚔️',
-    damage: '💔',
-    chat: '💬',
-    block_break: '⛏️',
-    block_place: '🧱',
-    item_pickup: '📦',
-    item_drop: '📤',
-    death: '💀',
-    respawn: '✨',
-    login: '🔌',
-    logout: '👋',
-    fish: '🎣',
-    sleep: '😴',
-    wake: '☀️',
-  };
-  return emojiMap[type] || '📌';
-}
-
-// 列表页的卡片组件
-function AgentCardView({ agent, events, onClick, onStop }: {
-  agent: AgentStatus;
-  events: AgentEvent[];
-  onClick: () => void;
-  onStop?: () => void;
-}) {
-  const recentEvents = events.slice(-3).reverse();
-  
-  return (
-    <Card 
-      className="cursor-pointer hover:shadow-lg transition-all hover:border-primary/50 hover:-translate-y-0.5"
-      onClick={onClick}
-    >
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Bot className="w-5 h-5" />
-            <CardTitle className="text-lg">{agent.username}</CardTitle>
-          </div>
-          <Badge variant={agent.connected ? 'default' : 'destructive'}>
-            {agent.connected ? '在线' : '离线'}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <MapPin className="w-3 h-3" />
-          <span className="font-mono">
-            {agent.position.x}, {agent.position.y}, {agent.position.z}
-          </span>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* 最近事件 */}
-        {recentEvents.length > 0 && (
-          <div className="space-y-1">
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="w-3 h-3" />
-              <span>最近活动</span>
-            </div>
-            {recentEvents.map((event) => (
-              <div key={event.id} className="flex items-center gap-2 text-xs">
-                <span>{getEventEmoji(event.type)}</span>
-                <span className="truncate flex-1">{event.description}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* 操作按钮 */}
-        <div className="flex items-center gap-2 pt-2 border-t">
-          <Button variant="outline" size="sm" className="flex-1 gap-1">
-            <Eye className="w-3 h-3" />
-            查看详情
-          </Button>
-          {agent.id.startsWith('demo-') && onStop && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" className="text-destructive" onClick={(e) => { e.stopPropagation(); onStop(); }}>
-                    <Pause className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>停止演示</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// 详情页组件
-function AgentDetailView({ agent, events, worldSnapshot, onBack }: {
-  agent: AgentStatus;
-  events: AgentEvent[];
-  worldSnapshot?: WorldSnapshot;
-  onBack: () => void;
-}) {
-  const recentEvents = events.slice(-20).reverse();
-  
-  // 转换世界快照为 MiniMap 需要的格式
-  const miniMapBlocks = (worldSnapshot?.blocks || []).map(b => ({
-    position: b.position,
-    type: b.type,
-    name: b.name
-  }));
-  
-  const miniMapEntities = (worldSnapshot?.entities || []).map(e => ({
-    type: e.type,
-    position: e.position,
-    name: e.type,
-    distance: Math.sqrt(
-      Math.pow(e.position.x - agent.position.x, 2) +
-      Math.pow(e.position.z - agent.position.z, 2)
-    )
-  }));
-  
-  // 转换背包数据 - 直接使用 agent.inventory
-  const inventoryItems = agent.inventory || [];
-  
-  return (
-    <div className="space-y-6">
-      {/* 返回按钮 */}
-      <Button variant="ghost" onClick={onBack} className="gap-2">
-        <ArrowLeft className="w-4 h-4" />
-        返回列表
-      </Button>
-
-      {/* Agent 信息头部 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-primary/10 rounded-full">
-            <Bot className="w-8 h-8 text-primary" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-bold">{agent.username}</h2>
-              {agent.id.startsWith('demo-') && (
-                <Badge variant="outline">
-                  <Bot className="w-3 h-3 mr-1" />
-                  演示
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground font-mono">{agent.id}</p>
-          </div>
-        </div>
-        <Badge variant={agent.connected ? 'default' : 'destructive'} className="text-sm px-3 py-1">
-          {agent.connected ? '在线' : '离线'}
-        </Badge>
-      </div>
-
-      {/* 左栏：状态和小地图 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 状态卡片 */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* 状态卡片网格 */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="p-3 pb-1">
-                <CardTitle className="text-sm flex items-center gap-1">
-                  <MapPin className="w-4 h-4" /> 坐标
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 pt-0">
-                <div className="font-mono text-sm space-y-0.5">
-                  <div>X: {agent.position.x}</div>
-                  <div>Y: {agent.position.y}</div>
-                  <div>Z: {agent.position.z}</div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="p-3 pb-1">
-                <CardTitle className="text-sm flex items-center gap-1">
-                  <Eye className="w-4 h-4" /> 视角
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 pt-0">
-                <div className="font-mono text-sm">
-                  <div>Yaw: {agent.yaw.toFixed(1)}°</div>
-                  <div>Pitch: {agent.pitch.toFixed(1)}°</div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="p-3 pb-1">
-                <CardTitle className="text-sm flex items-center gap-1">
-                  <Activity className="w-4 h-4" /> 状态
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 pt-0">
-                <div className="font-mono text-sm capitalize">
-                  <div>{agent.gamemode}</div>
-                  <div className="text-muted-foreground">{agent.dimension}</div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="p-3 pb-1">
-                <CardTitle className="text-sm flex items-center gap-1">
-                  <Move className="w-4 h-4" /> 速度
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 pt-0">
-                <div className="font-mono text-sm">
-                  {agent.velocity
-                    ? `${agent.velocity.x.toFixed(2)}, ${agent.velocity.y.toFixed(2)}, ${agent.velocity.z.toFixed(2)}`
-                    : 'N/A'}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* 生命值和饥饿值 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="p-3 pb-1">
-                <CardTitle className="text-sm flex items-center gap-1">
-                  <Heart className="w-4 h-4 text-red-500" /> 生命值
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 pt-0">
-                <div className="flex items-center gap-3">
-                  <Progress value={(agent.health / (agent.maxHealth || 20)) * 100} className="h-3 flex-1" />
-                  <span className="font-mono text-sm">{agent.health} / {agent.maxHealth || 20}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="p-3 pb-1">
-                <CardTitle className="text-sm flex items-center gap-1">
-                  <Utensils className="w-4 h-4 text-orange-500" /> 饥饿值
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 pt-0">
-                <div className="flex items-center gap-3">
-                  <Progress value={(agent.food / 20) * 100} className="h-3 flex-1" />
-                  <span className="font-mono text-sm">{agent.food} / 20</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* 事件日志 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="w-5 h-5" /> 事件日志
-              </CardTitle>
-              <CardDescription>Agent 的最近活动记录</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-80 overflow-y-auto">
-                {recentEvents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    暂无事件记录
-                  </p>
-                ) : (
-                  recentEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
-                    >
-                      <div className="text-2xl">{getEventEmoji(event.type)}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline" className="text-xs">
-                            {event.type}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(event.timestamp).toLocaleString('zh-CN')}
-                          </span>
-                        </div>
-                        <p className="text-sm mt-1">{event.description}</p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 右栏：小地图和背包 */}
-        <div className="space-y-4">
-          {/* 小地图 */}
-          <Card>
-            <CardHeader className="p-3 pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Map className="w-4 h-4" /> 周围环境
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 pt-0">
-              <MiniMap
-                position={agent.position}
-                yaw={agent.yaw}
-                blocks={miniMapBlocks}
-                entities={miniMapEntities}
-              />
-            </CardContent>
-          </Card>
-
-          {/* 背包 */}
-          <Card>
-            <CardHeader className="p-3 pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Backpack className="w-4 h-4" /> 背包物品
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 pt-0">
-              <InventoryGrid
-                inventory={inventoryItems}
-                equipment={agent.equipment}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { AddDemoAgentDialog } from '@/hooks/use-demo-agent';
+import type { AgentEvent, NearbyBlock, NearbyEntity, InventorySlot, Position } from '@/lib/types';
 
 export default function ObserverPage() {
   const { agents, events, worldSnapshots, isConnected, lastUpdate } = useAgentObserver();
-  const { activeAgents, stopDemoAgent, stopAllDemoAgents } = useDemoAgent();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [wsHost, setWsHost] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'grid' | 'detail'>('grid');
+  const [activeTab, setActiveTab] = useState<'overview' | 'map' | 'inventory' | 'events'>('overview');
+  const [now, setNow] = useState(() => Date.now());
 
+  // 更新时间用于相对时间计算
   useEffect(() => {
-    setCurrentTime(Date.now());
-    setWsHost(window.location.host);
-    const timer = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 1000);
+    const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const agentsList = Array.from(agents.values());
-  const selectedAgent = selectedAgentId ? agents.get(selectedAgentId) : null;
-  const selectedEvents = selectedAgentId ? events.get(selectedAgentId) || [] : [];
-  const demoAgentCount = activeAgents.size;
-
-  const timeSinceUpdate = lastUpdate > 0 ? Math.round((currentTime - lastUpdate) / 1000) : 0;
-
   const handleAgentClick = useCallback((agentId: string) => {
     setSelectedAgentId(agentId);
+    setViewMode('detail');
+    setActiveTab('overview');
   }, []);
 
   const handleBack = useCallback(() => {
     setSelectedAgentId(null);
+    setViewMode('grid');
   }, []);
 
+  const selectedAgent = selectedAgentId ? agents.get(selectedAgentId) : null;
+  const selectedSnapshot = selectedAgentId ? worldSnapshots.get(selectedAgentId) : null;
+  const selectedEvents = selectedAgentId ? (events.get(selectedAgentId) || []) : [];
+
+  const formatTime = (timestamp: number) => new Date(timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  const getTimeSince = (timestamp: number) => {
+    const seconds = Math.floor((now - timestamp) / 1000);
+    if (seconds < 5) return '刚刚';
+    if (seconds < 60) return `${seconds}秒前`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}分钟前`;
+    return `${Math.floor(minutes / 60)}小时前`;
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-black/70 border-b border-white/10">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Activity className="w-6 h-6 text-primary" />
+              <div className="relative">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                  <Bot className="w-6 h-6 text-white" />
+                </div>
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-black animate-pulse" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">Minecraft Agent 观测台</h1>
-                <p className="text-sm text-muted-foreground">
-                  实时监控 Agent 在 Minecraft 世界中的行为
-                </p>
+                <h1 className="text-lg font-bold tracking-tight">Agent Observer</h1>
+                <p className="text-xs text-gray-500">Minecraft 实时监控</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              {/* 连接状态 */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant={isConnected ? 'default' : 'destructive'} className="gap-1">
-                      {isConnected ? (
-                        <>
-                          <Wifi className="w-3 h-3" />
-                          已连接
-                        </>
-                      ) : (
-                        <>
-                          <WifiOff className="w-3 h-3" />
-                          未连接
-                        </>
-                      )}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>最后更新: {timeSinceUpdate}秒前</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Agent 数量 */}
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-muted-foreground" />
-                <span className="font-mono">{agentsList.length}</span>
-                <span className="text-muted-foreground">个 Agent</span>
-                {demoAgentCount > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    <Bot className="w-3 h-3 mr-1" />
-                    {demoAgentCount} 演示
-                  </Badge>
-                )}
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+                isConnected ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
+              }`}>
+                {isConnected ? <><Wifi className="w-3 h-3" /> {agents.size} Agent</> : <><WifiOff className="w-3 h-3" /> 断开</>}
               </div>
-
-              {/* 演示 Agent 控制 */}
-              <div className="flex items-center gap-2">
-                <AddDemoAgentDialog />
-
-                {demoAgentCount > 0 && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="icon" className="text-destructive">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>停止所有演示 Agent</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          这将断开所有正在运行的演示 Agent 连接。
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
-                        <AlertDialogAction onClick={stopAllDemoAgents}>
-                          确认停止
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
-              </div>
-
-              {/* 刷新按钮 */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={() => window.location.reload()}>
-                      <RefreshCw className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>刷新页面</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <AddDemoAgentDialog />
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
-        {agentsList.length === 0 ? (
-          /* 空状态 */
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="p-6 bg-muted rounded-full mb-6">
-              <Server className="w-12 h-12 text-muted-foreground" />
+      {/* Grid View */}
+      {viewMode === 'grid' && (
+        <div className="relative">
+          <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-950 to-black -z-10" />
+          <div className="fixed inset-0 opacity-30" style={{
+            backgroundImage: `linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px)`,
+            backgroundSize: '40px 40px'
+          }} />
+
+          <div className="container mx-auto px-4 py-8">
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-2">
+                <Users className="w-5 h-5 text-emerald-400" />
+                <h2 className="text-2xl font-bold">活跃 Agent</h2>
+                <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-full">{agents.size}</span>
+              </div>
+              <p className="text-gray-500 text-sm">
+                实时监控 Agent 活动 {lastUpdate > 0 && <span className="ml-2">最后更新: {getTimeSince(lastUpdate)}</span>}
+              </p>
             </div>
-            <h2 className="text-2xl font-bold mb-2">暂无活跃的 Agent</h2>
-            <p className="text-muted-foreground text-center max-w-md mb-6">
-              当有 Minecraft Agent 连接时，它们会显示在这里。
-              <br />
-              你可以添加演示 Agent 来预览观测台功能。
-            </p>
 
-            <div className="flex gap-3 mb-8">
-              <AddDemoAgentDialog />
-            </div>
+            {agents.size === 0 ? (
+              <div className="flex flex-col items-center justify-center py-32">
+                <div className="w-24 h-24 mb-6 rounded-2xl bg-gray-900/50 border border-gray-800 flex items-center justify-center">
+                  <Bot className="w-12 h-12 text-gray-700" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">暂无活跃 Agent</h3>
+                <p className="text-gray-500 text-center">点击右上角"添加演示 Agent"启动测试</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {Array.from(agents.entries()).map(([agentId, agent]) => (
+                  <AgentCard 
+                    key={agentId} 
+                    agent={agent} 
+                    events={events.get(agentId) || []}
+                    onClick={() => handleAgentClick(agentId)} 
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bot className="w-5 h-5" />
-                    演示模式
-                  </CardTitle>
-                  <CardDescription>
-                    使用模拟数据预览观测台功能
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    点击"添加演示 Agent"按钮，可以创建一个模拟的 Minecraft Agent，
-                    自动发送位置更新、事件日志和周围环境信息。
-                  </p>
-                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>模拟移动和视角变化</li>
-                    <li>随机生成事件日志</li>
-                    <li>展示背包和装备</li>
-                    <li>小地图方块和实体显示</li>
-                  </ul>
-                </CardContent>
-              </Card>
+      {/* Detail View */}
+      {viewMode === 'detail' && selectedAgent && (
+        <div className="relative">
+          <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-950 to-black -z-10" />
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="w-5 h-5" />
-                    真实 Agent 集成
-                  </CardTitle>
-                  <CardDescription>
-                    连接真实的 Minecraft Agent
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Agent 需要通过 WebSocket 连接到此观测台并上报状态。
-                    查看 AGENTS.md 文档了解集成方式。
-                  </p>
-                  <div className="bg-muted/50 p-3 rounded-lg">
-                    <p className="text-xs font-mono text-muted-foreground mb-2">连接地址:</p>
-                    <code className="text-sm" suppressHydrationWarning>
-                      ws://{wsHost || 'localhost'}/ws/agent
-                    </code>
+          {/* Top Nav */}
+          <div className="sticky top-0 z-50 backdrop-blur-xl bg-black/70 border-b border-white/10">
+            <div className="container mx-auto px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <button onClick={handleBack} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 transition-all border border-white/10">
+                    <ChevronLeft className="w-4 h-4" />
+                    <span className="text-sm">返回</span>
+                  </button>
+                  <div className="h-6 w-px bg-white/10" />
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center">
+                      <Bot className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="font-semibold">{selectedAgent.username}</h2>
+                      <p className="text-xs text-gray-500">{selectedAgent.position.x.toFixed(1)}, {selectedAgent.position.y.toFixed(1)}, {selectedAgent.position.z.toFixed(1)}</p>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex items-center gap-1 p-1 bg-white/5 rounded-lg border border-white/10">
+                  {[
+                    { id: 'overview', icon: Activity, label: '总览' },
+                    { id: 'map', icon: Map, label: '地图' },
+                    { id: 'inventory', icon: Backpack, label: '背包' },
+                    { id: 'events', icon: Clock, label: '日志' },
+                  ].map(({ id, icon: Icon, label }) => (
+                    <button key={id} onClick={() => setActiveTab(id as typeof activeTab)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                        activeTab === id ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      }`}>
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-        ) : selectedAgent ? (
-          /* 详情视图 */
-          <AgentDetailView
-            agent={selectedAgent}
-            events={selectedEvents}
-            worldSnapshot={worldSnapshots.get(selectedAgentId!)}
-            onBack={handleBack}
-          />
-        ) : (
-          /* 卡片网格视图 */
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold flex items-center gap-2">
-                <Backpack className="w-5 h-5" />
-                Agent 列表
-              </h2>
-              <Badge variant="secondary">{agentsList.length} 个在线</Badge>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {agentsList.map((agent) => (
-                <AgentCardView
-                  key={agent.id}
-                  agent={agent}
-                  events={events.get(agent.id) || []}
-                  onClick={() => handleAgentClick(agent.id)}
-                  onStop={agent.id.startsWith('demo-') ? () => stopDemoAgent(agent.id) : undefined}
-                />
-              ))}
-            </div>
+
+          {/* Content */}
+          <div className="container mx-auto px-4 py-6">
+            {activeTab === 'overview' && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Main Status */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Status Cards */}
+                  <div className="bg-gradient-to-br from-gray-900/80 to-black/60 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Activity className="w-4 h-4 text-emerald-400" />
+                      <h3 className="font-semibold">实时状态</h3>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <StatusItem icon={Compass} label="位置" value={`${selectedAgent.position.x.toFixed(1)}, ${selectedAgent.position.y.toFixed(1)}, ${selectedAgent.position.z.toFixed(1)}`} color="emerald" />
+                      <StatusItem icon={Eye} label="视角" value={`Y: ${selectedAgent.yaw.toFixed(0)}° P: ${selectedAgent.pitch.toFixed(0)}°`} color="blue" />
+                      <StatusItem icon={Grid3X3} label="模式" value={selectedAgent.gamemode.charAt(0).toUpperCase() + selectedAgent.gamemode.slice(1)} color="purple" />
+                      <StatusItem icon={Footprints} label="状态" value={selectedAgent.isOnGround ? '地面' : '空中'} color={selectedAgent.isSprinting ? 'orange' : 'gray'} />
+                    </div>
+                  </div>
+
+                  {/* Bars */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <StatBar icon={Heart} label="生命值" value={selectedAgent.health} maxValue={selectedAgent.maxHealth || 20} color="red" />
+                    <StatBar icon={Cookie} label="饥饿值" value={selectedAgent.food} maxValue={20} color="orange" />
+                  </div>
+
+                  {/* Mini Map Preview */}
+                  <div className="bg-gradient-to-br from-gray-900/80 to-black/60 backdrop-blur-xl rounded-2xl border border-white/10 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Map className="w-4 h-4 text-emerald-400" />
+                        <h3 className="font-semibold">周围环境</h3>
+                      </div>
+                      <button onClick={() => setActiveTab('map')} className="text-xs text-emerald-400 hover:text-emerald-300">查看大图</button>
+                    </div>
+                    <div className="rounded-xl overflow-hidden border border-white/10">
+                      <MiniMap 
+                        position={selectedAgent.position}
+                        yaw={selectedAgent.yaw}
+                        blocks={selectedSnapshot?.blocks?.map(b => ({ position: b.position, type: b.type, name: b.name || b.type.replace(/_/g, ' ') })) || []}
+                        entities={selectedSnapshot?.entities?.map(e => ({ type: e.type, position: e.position, distance: Math.sqrt(Math.pow(e.position.x - selectedAgent.position.x, 2) + Math.pow(e.position.z - selectedAgent.position.z, 2)) })) || []}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Events Sidebar */}
+                <div className="bg-gradient-to-br from-gray-900/80 to-black/60 backdrop-blur-xl rounded-2xl border border-white/10 p-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Clock className="w-4 h-4 text-emerald-400" />
+                    <h3 className="font-semibold">事件日志</h3>
+                    <span className="ml-auto text-xs text-gray-500">{selectedEvents.length} 条</span>
+                  </div>
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+                    {selectedEvents.length === 0 ? (
+                      <div className="text-center py-8 text-gray-600">暂无事件</div>
+                    ) : (
+                      selectedEvents.map((event, i) => (
+                        <EventItem key={`${event.timestamp}-${i}`} event={event} />
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'map' && (
+              <div className="max-w-4xl mx-auto">
+                <div className="bg-gradient-to-br from-gray-900/80 to-black/60 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Map className="w-5 h-5 text-emerald-400" />
+                    <h3 className="text-lg font-semibold">小地图</h3>
+                    <span className="ml-2 text-xs text-gray-500">32 格范围</span>
+                  </div>
+                  <div className="rounded-xl overflow-hidden border border-white/10">
+                    <MiniMap 
+                      position={selectedAgent.position}
+                      yaw={selectedAgent.yaw}
+                      blocks={selectedSnapshot?.blocks?.map(b => ({ position: b.position, type: b.type, name: b.name || b.type.replace(/_/g, ' ') })) || []}
+                      entities={selectedSnapshot?.entities?.map(e => ({ type: e.type, position: e.position, distance: Math.sqrt(Math.pow(e.position.x - selectedAgent.position.x, 2) + Math.pow(e.position.z - selectedAgent.position.z, 2)) })) || []}
+                    />
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-500">
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-emerald-500 rounded-sm" /><span>玩家</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-amber-500 rounded-sm" /><span>实体</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-green-700 rounded-sm" /><span>草地</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-gray-600 rounded-sm" /><span>石头</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-blue-400 rounded-sm" /><span>水源</span></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'inventory' && (
+              <div className="max-w-4xl mx-auto">
+                <div className="bg-gradient-to-br from-gray-900/80 to-black/60 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Backpack className="w-5 h-5 text-emerald-400" />
+                    <h3 className="text-lg font-semibold">背包物品</h3>
+                  </div>
+                  <InventoryGrid 
+                    inventory={selectedAgent.inventory || []}
+                    equipment={selectedAgent.equipment}
+                  />
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'events' && (
+              <div className="max-w-3xl mx-auto">
+                <div className="bg-gradient-to-br from-gray-900/80 to-black/60 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Clock className="w-5 h-5 text-emerald-400" />
+                    <h3 className="text-lg font-semibold">完整事件日志</h3>
+                    <span className="ml-2 text-xs text-gray-500">{selectedEvents.length} 条</span>
+                  </div>
+                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                    {selectedEvents.length === 0 ? (
+                      <div className="text-center py-12 text-gray-600">暂无事件</div>
+                    ) : (
+                      selectedEvents.map((event, i) => (
+                        <div key={`${event.timestamp}-${i}`} className="flex gap-4 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                            <EventIcon type={event.type} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium">{getEventTypeName(event.type)}</span>
+                              <span className="text-xs text-gray-500">{formatTime(event.timestamp)}</span>
+                            </div>
+                            <p className="text-sm text-gray-400 truncate">{event.description}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </main>
+        </div>
+      )}
     </div>
   );
+}
+
+function StatusItem({ icon: Icon, label, value, color }: { icon: React.ElementType; label: string; value: string | number; color: string }) {
+  const colorMap: Record<string, string> = {
+    emerald: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/30 text-emerald-400',
+    blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-400',
+    purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/30 text-purple-400',
+    orange: 'from-orange-500/20 to-orange-600/10 border-orange-500/30 text-orange-400',
+    gray: 'from-gray-500/20 to-gray-600/10 border-gray-500/30 text-gray-400',
+  };
+  return (
+    <div className={`p-4 rounded-xl bg-gradient-to-br ${colorMap[color] || colorMap.gray} border`}>
+      <div className="flex items-center gap-2 mb-2"><Icon className="w-4 h-4 opacity-70" /><span className="text-xs opacity-70">{label}</span></div>
+      <p className="text-sm font-semibold truncate">{value}</p>
+    </div>
+  );
+}
+
+function StatBar({ icon: Icon, label, value, maxValue, color }: { icon: React.ElementType; label: string; value: number; maxValue: number; color: string }) {
+  const percentage = Math.max(0, Math.min(100, (value / maxValue) * 100));
+  const colorMap: Record<string, { bar: string; text: string }> = {
+    red: { bar: 'bg-gradient-to-r from-red-600 to-red-400', text: 'text-red-400' },
+    orange: { bar: 'bg-gradient-to-r from-orange-600 to-amber-400', text: 'text-orange-400' },
+  };
+  return (
+    <div className="bg-gradient-to-br from-gray-900/80 to-black/60 backdrop-blur-xl rounded-2xl border border-white/10 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Icon className={`w-4 h-4 ${colorMap[color]?.text}`} />
+        <span className="text-sm text-gray-400">{label}</span>
+        <span className={`ml-auto text-sm font-semibold ${colorMap[color]?.text}`}>{value} / {maxValue}</span>
+      </div>
+      <div className="h-3 bg-black/50 rounded-full overflow-hidden border border-white/10">
+        <div className={`h-full ${colorMap[color]?.bar} rounded-full transition-all duration-500 shadow-lg`} style={{ width: `${percentage}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function EventItem({ event }: { event: AgentEvent }) {
+  return (
+    <div className="flex gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+      <div className="flex-shrink-0 mt-0.5"><EventIcon type={event.type} /></div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm truncate">{event.description}</p>
+        <p className="text-xs text-gray-600">{formatTimeSimple(event.timestamp)}</p>
+      </div>
+    </div>
+  );
+}
+
+function EventIcon({ type }: { type: string }) {
+  const iconMap: Record<string, { icon: React.ElementType; color: string }> = {
+    move: { icon: Footprints, color: 'text-blue-400' },
+    jump: { icon: Activity, color: 'text-green-400' },
+    attack: { icon: Heart, color: 'text-red-400' },
+    chat: { icon: Users, color: 'text-purple-400' },
+    pickup: { icon: Backpack, color: 'text-amber-400' },
+    break: { icon: Grid3X3, color: 'text-gray-400' },
+    place: { icon: Grid3X3, color: 'text-emerald-400' },
+  };
+  const config = iconMap[type] || { icon: Activity, color: 'text-gray-400' };
+  return <config.icon className={`w-3.5 h-3.5 ${config.color}`} />;
+}
+
+function getEventTypeName(type: string): string {
+  const nameMap: Record<string, string> = {
+    move: '移动', jump: '跳跃', attack: '攻击', chat: '聊天', pickup: '拾取', drop: '丢弃',
+    break: '破坏', place: '放置', death: '死亡', respawn: '重生', eat: '进食', sleep: '睡觉',
+  };
+  return nameMap[type] || type;
+}
+
+function formatTimeSimple(timestamp: number): string {
+  return new Date(timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
