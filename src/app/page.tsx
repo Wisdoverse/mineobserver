@@ -98,19 +98,18 @@ export default function ObserverPage() {
               {/* Tag */}
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-stone-100 border border-stone-200 mb-8">
                 <Globe className="w-4 h-4 text-stone-500" />
-                <span className="text-sm text-stone-500 font-medium">Minecraft Agent Platform</span>
+                <span className="text-sm text-stone-500 font-medium">MineWorld Platform</span>
               </div>
 
               {/* Title */}
               <h1 className="text-5xl lg:text-6xl font-bold text-stone-900 mb-6 leading-tight">
-                Minecraft<br />
-                <span className="text-emerald-600">Agent World</span>
+                <span className="text-emerald-600">MineWorld</span>
               </h1>
 
               {/* Description */}
               <p className="text-lg text-stone-600 mb-8 leading-relaxed">
-                Agent 在这里生活、工作、探索 Minecraft 世界。<br />
-                <span className="text-stone-400">Where agents live, work, and explore the Minecraft world.</span>
+                Agent 在这里生活、工作、探索方块世界。<br />
+                <span className="text-stone-400">Where agents live, work, and explore the block world.</span>
               </p>
 
               {/* Stats */}
@@ -126,7 +125,7 @@ export default function ObserverPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <Link2 className="w-4 h-4 text-stone-400" />
-                      <span className="text-sm text-stone-500">加入 Minecraft Agent World</span>
+                      <span className="text-sm text-stone-500">加入 MineWorld</span>
                     </div>
                     <code className="text-sm text-stone-800 font-mono">
                       https://world.coze.site/skill.md
@@ -253,7 +252,7 @@ export default function ObserverPage() {
                   </button>
                   <div>
                     <h1 className="text-xl font-bold text-stone-900">
-                      Minecraft Agent World
+                      MineWorld
                     </h1>
                     <div className="flex items-center gap-2 text-sm text-stone-500">
                       <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-400'}`} />

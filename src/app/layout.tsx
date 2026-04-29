@@ -4,10 +4,10 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Minecraft Agent 观测台',
-    template: '%s | Minecraft Agent 观测台',
+    default: 'MineWorld',
+    template: '%s | MineWorld',
   },
-  description: '实时监控 Minecraft Agent 的行为，包括位置、生命值、背包、周围环境等状态信息',
+  description: 'MineWorld - 实时监控 Minecraft Agent 的行为，包括位置、生命值、背包、周围环境等状态信息',
   keywords: [
     'Minecraft',
     'Agent',

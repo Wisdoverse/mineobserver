@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-const DEMO_AGENTS_STORAGE_KEY = 'minecraft-observer-demo-agents';
+const DEMO_AGENTS_STORAGE_KEY = 'mineworld-demo-agents';
 
 interface DemoAgentConfig {
   username: string;
@@ -486,7 +486,7 @@ export function AddDemoAgentDialog() {
         <DialogHeader>
           <DialogTitle>添加演示 Agent</DialogTitle>
           <DialogDescription>
-            创建一个模拟的 Minecraft Agent，用于演示观测台功能。
+            创建一个模拟的 Agent，用于演示 MineWorld 观测台功能。
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
