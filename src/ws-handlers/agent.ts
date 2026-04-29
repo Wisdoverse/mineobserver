@@ -9,6 +9,13 @@ import type {
   EventPayload,
   WorldSnapshotPayload,
 } from '@/lib/types/agent';
+import { createWriteStream } from 'fs';
+
+// 调试日志文件
+const debugLogStream = createWriteStream('/app/work/logs/bypass/ws-debug.log', { flags: 'a' });
+function debug(msg: string) {
+  debugLogStream.write(`[${new Date().toISOString()}] ${msg}\n`);
+}
 
 // 广播给所有连接的客户端（观测者）
 const observerClients = new Set<WebSocket>();
@@ -22,10 +29,15 @@ export function setupAgentHandler(wss: WebSocketServer) {
 
     ws.on('message', (raw) => {
       try {
+        debug(`[WS] Raw data: ${raw.toString().substring(0, 300)}`);
         const msg: WsMessage = JSON.parse(raw.toString());
+        
+        // 记录所有消息类型用于调试
+        debug(`[WS] Parsed message type: ${msg.type}`);
 
         // 处理心跳
         if (msg.type === 'ping') {
+          debug('[WS] Handling ping');
           ws.send(JSON.stringify({ type: 'pong', payload: null }));
           return;
         }
@@ -67,12 +79,17 @@ export function setupAgentHandler(wss: WebSocketServer) {
           }
 
           case 'agent:status:update': {
+            console.log(`[Debug] Received agent:status:update for agentId:`, (msg.payload as StatusUpdatePayload)?.agentId);
             // 状态更新
             const payload = msg.payload as StatusUpdatePayload;
             const { agentId, status } = payload;
 
+            console.log(`[Debug] Updating status for agentId: ${agentId}`);
+
             const prevStatus = agentStateManager.getAgentStatus(agentId);
             const updatedStatus = agentStateManager.updateStatus(agentId, status);
+
+            console.log(`[Debug] prevStatus:`, prevStatus, `updatedStatus:`, updatedStatus);
 
             if (updatedStatus && prevStatus) {
               // 检测位置变化
@@ -165,6 +182,7 @@ export function setupAgentHandler(wss: WebSocketServer) {
             console.warn('[WS] Unknown message type:', msg.type);
         }
       } catch (err) {
+        debug(`[WS] Error: ${err}`);
         console.error('[WS] Failed to process message:', err);
       }
     });
