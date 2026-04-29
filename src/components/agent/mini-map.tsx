@@ -152,7 +152,7 @@ export function MiniMap({ position, yaw, blocks = [], entities = [] }: MiniMapPr
       </div>
 
       {/* 地图区域 */}
-      <div className="relative bg-slate-900 rounded-lg overflow-hidden" style={{ width: SIZE, height: SIZE }}>
+      <div className="relative bg-gray-100 rounded-lg overflow-hidden border border-gray-200" style={{ width: SIZE, height: SIZE }}>
         {/* 网格 */}
         <svg width={SIZE} height={SIZE} className="absolute inset-0">
           {mapGrid.map((row, xi) =>
@@ -165,8 +165,8 @@ export function MiniMap({ position, yaw, blocks = [], entities = [] }: MiniMapPr
                     y={xi * CELL_SIZE}
                     width={CELL_SIZE}
                     height={CELL_SIZE}
-                    fill="#1a1a2e"
-                    stroke="#2a2a4e"
+                    fill="#e5e7eb"
+                    stroke="#d1d5db"
                     strokeWidth={0.5}
                   />
                 );
@@ -179,7 +179,7 @@ export function MiniMap({ position, yaw, blocks = [], entities = [] }: MiniMapPr
                   width={CELL_SIZE}
                   height={CELL_SIZE}
                   fill={cell.color}
-                  stroke="#333"
+                  stroke="#9ca3af"
                   strokeWidth={0.5}
                   opacity={0.7 + Math.min((cell.y - position.y + 2) * 0.1, 0.3)}
                 />

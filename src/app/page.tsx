@@ -50,9 +50,9 @@ export default function ObserverPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50 text-gray-900">
       {/* Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-black/70 border-b border-white/10">
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -60,17 +60,17 @@ export default function ObserverPage() {
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
                   <Bot className="w-6 h-6 text-white" />
                 </div>
-                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-black animate-pulse" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white animate-pulse" />
               </div>
               <div>
-                <h1 className="text-lg font-bold tracking-tight">Agent Observer</h1>
+                <h1 className="text-lg font-bold tracking-tight text-gray-900">Agent Observer</h1>
                 <p className="text-xs text-gray-500">Minecraft 实时监控</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-                isConnected ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                isConnected ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-red-100 text-red-700 border border-red-200'
               }`}>
                 {isConnected ? <><Wifi className="w-3 h-3" /> {agents.size} Agent</> : <><WifiOff className="w-3 h-3" /> 断开</>}
               </div>
@@ -83,18 +83,12 @@ export default function ObserverPage() {
       {/* Grid View */}
       {viewMode === 'grid' && (
         <div className="relative">
-          <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-950 to-black -z-10" />
-          <div className="fixed inset-0 opacity-30" style={{
-            backgroundImage: `linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px)`,
-            backgroundSize: '40px 40px'
-          }} />
-
           <div className="container mx-auto px-4 py-8">
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-2">
-                <Users className="w-5 h-5 text-emerald-400" />
-                <h2 className="text-2xl font-bold">活跃 Agent</h2>
-                <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-full">{agents.size}</span>
+                <Users className="w-5 h-5 text-emerald-600" />
+                <h2 className="text-2xl font-bold text-gray-900">活跃 Agent</h2>
+                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">{agents.size}</span>
               </div>
               <p className="text-gray-500 text-sm">
                 实时监控 Agent 活动 {lastUpdate > 0 && <span className="ml-2">最后更新: {getTimeSince(lastUpdate)}</span>}
@@ -103,10 +97,10 @@ export default function ObserverPage() {
 
             {agents.size === 0 ? (
               <div className="flex flex-col items-center justify-center py-32">
-                <div className="w-24 h-24 mb-6 rounded-2xl bg-gray-900/50 border border-gray-800 flex items-center justify-center">
-                  <Bot className="w-12 h-12 text-gray-700" />
+                <div className="w-24 h-24 mb-6 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center">
+                  <Bot className="w-12 h-12 text-gray-400" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">暂无活跃 Agent</h3>
+                <h3 className="text-xl font-semibold mb-2 text-gray-900">暂无活跃 Agent</h3>
                 <p className="text-gray-500 text-center">点击右上角"添加演示 Agent"启动测试</p>
               </div>
             ) : (
@@ -128,31 +122,29 @@ export default function ObserverPage() {
       {/* Detail View */}
       {viewMode === 'detail' && selectedAgent && (
         <div className="relative">
-          <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-950 to-black -z-10" />
-
           {/* Top Nav */}
-          <div className="sticky top-0 z-50 backdrop-blur-xl bg-black/70 border-b border-white/10">
+          <div className="sticky top-0 z-50 backdrop-blur-xl bg-white/95 border-b border-gray-200 shadow-sm">
             <div className="container mx-auto px-4 py-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <button onClick={handleBack} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 transition-all border border-white/10">
+                  <button onClick={handleBack} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all border border-gray-200">
                     <ChevronLeft className="w-4 h-4" />
                     <span className="text-sm">返回</span>
                   </button>
-                  <div className="h-6 w-px bg-white/10" />
+                  <div className="h-6 w-px bg-gray-300" />
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center">
                       <Bot className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <h2 className="font-semibold">{selectedAgent.username}</h2>
+                      <h2 className="font-semibold text-gray-900">{selectedAgent.username}</h2>
                       <p className="text-xs text-gray-500">{selectedAgent.position.x.toFixed(1)}, {selectedAgent.position.y.toFixed(1)}, {selectedAgent.position.z.toFixed(1)}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex items-center gap-1 p-1 bg-white/5 rounded-lg border border-white/10">
+                <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg border border-gray-200">
                   {[
                     { id: 'overview', icon: Activity, label: '总览' },
                     { id: 'map', icon: Map, label: '地图' },
@@ -161,7 +153,7 @@ export default function ObserverPage() {
                   ].map(({ id, icon: Icon, label }) => (
                     <button key={id} onClick={() => setActiveTab(id as typeof activeTab)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                        activeTab === id ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        activeTab === id ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
                       }`}>
                       <Icon className="w-3.5 h-3.5" />
                       <span>{label}</span>
@@ -179,10 +171,10 @@ export default function ObserverPage() {
                 {/* Main Status */}
                 <div className="lg:col-span-2 space-y-6">
                   {/* Status Cards */}
-                  <div className="bg-gradient-to-br from-gray-900/80 to-black/60 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                  <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
-                      <Activity className="w-4 h-4 text-emerald-400" />
-                      <h3 className="font-semibold">实时状态</h3>
+                      <Activity className="w-4 h-4 text-emerald-600" />
+                      <h3 className="font-semibold text-gray-900">实时状态</h3>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <StatusItem icon={Compass} label="位置" value={`${selectedAgent.position.x.toFixed(1)}, ${selectedAgent.position.y.toFixed(1)}, ${selectedAgent.position.z.toFixed(1)}`} color="emerald" />
@@ -199,15 +191,15 @@ export default function ObserverPage() {
                   </div>
 
                   {/* Mini Map Preview */}
-                  <div className="bg-gradient-to-br from-gray-900/80 to-black/60 backdrop-blur-xl rounded-2xl border border-white/10 p-4">
+                  <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <Map className="w-4 h-4 text-emerald-400" />
-                        <h3 className="font-semibold">周围环境</h3>
+                        <Map className="w-4 h-4 text-emerald-600" />
+                        <h3 className="font-semibold text-gray-900">周围环境</h3>
                       </div>
-                      <button onClick={() => setActiveTab('map')} className="text-xs text-emerald-400 hover:text-emerald-300">查看大图</button>
+                      <button onClick={() => setActiveTab('map')} className="text-xs text-emerald-600 hover:text-emerald-700 font-medium">查看大图</button>
                     </div>
-                    <div className="rounded-xl overflow-hidden border border-white/10">
+                    <div className="rounded-xl overflow-hidden border border-gray-200">
                       <MiniMap 
                         position={selectedAgent.position}
                         yaw={selectedAgent.yaw}
@@ -219,15 +211,15 @@ export default function ObserverPage() {
                 </div>
 
                 {/* Events Sidebar */}
-                <div className="bg-gradient-to-br from-gray-900/80 to-black/60 backdrop-blur-xl rounded-2xl border border-white/10 p-4">
+                <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
-                    <Clock className="w-4 h-4 text-emerald-400" />
-                    <h3 className="font-semibold">事件日志</h3>
+                    <Clock className="w-4 h-4 text-emerald-600" />
+                    <h3 className="font-semibold text-gray-900">事件日志</h3>
                     <span className="ml-auto text-xs text-gray-500">{selectedEvents.length} 条</span>
                   </div>
                   <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
                     {selectedEvents.length === 0 ? (
-                      <div className="text-center py-8 text-gray-600">暂无事件</div>
+                      <div className="text-center py-8 text-gray-400">暂无事件</div>
                     ) : (
                       selectedEvents.map((event, i) => (
                         <EventItem key={`${event.timestamp}-${i}`} event={event} />
@@ -240,13 +232,13 @@ export default function ObserverPage() {
 
             {activeTab === 'map' && (
               <div className="max-w-4xl mx-auto">
-                <div className="bg-gradient-to-br from-gray-900/80 to-black/60 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
-                    <Map className="w-5 h-5 text-emerald-400" />
-                    <h3 className="text-lg font-semibold">小地图</h3>
+                    <Map className="w-5 h-5 text-emerald-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">小地图</h3>
                     <span className="ml-2 text-xs text-gray-500">32 格范围</span>
                   </div>
-                  <div className="rounded-xl overflow-hidden border border-white/10">
+                  <div className="rounded-xl overflow-hidden border border-gray-200">
                     <MiniMap 
                       position={selectedAgent.position}
                       yaw={selectedAgent.yaw}
@@ -254,11 +246,11 @@ export default function ObserverPage() {
                       entities={selectedSnapshot?.entities?.map(e => ({ type: e.type, position: e.position, distance: Math.sqrt(Math.pow(e.position.x - selectedAgent.position.x, 2) + Math.pow(e.position.z - selectedAgent.position.z, 2)) })) || []}
                     />
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-500">
+                  <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-600">
                     <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-emerald-500 rounded-sm" /><span>玩家</span></div>
                     <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-amber-500 rounded-sm" /><span>实体</span></div>
                     <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-green-700 rounded-sm" /><span>草地</span></div>
-                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-gray-600 rounded-sm" /><span>石头</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-gray-500 rounded-sm" /><span>石头</span></div>
                     <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-blue-400 rounded-sm" /><span>水源</span></div>
                   </div>
                 </div>
@@ -267,10 +259,10 @@ export default function ObserverPage() {
 
             {activeTab === 'inventory' && (
               <div className="max-w-4xl mx-auto">
-                <div className="bg-gradient-to-br from-gray-900/80 to-black/60 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                   <div className="flex items-center gap-2 mb-6">
-                    <Backpack className="w-5 h-5 text-emerald-400" />
-                    <h3 className="text-lg font-semibold">背包物品</h3>
+                    <Backpack className="w-5 h-5 text-emerald-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">背包物品</h3>
                   </div>
                   <InventoryGrid 
                     inventory={selectedAgent.inventory || []}
@@ -282,27 +274,27 @@ export default function ObserverPage() {
 
             {activeTab === 'events' && (
               <div className="max-w-3xl mx-auto">
-                <div className="bg-gradient-to-br from-gray-900/80 to-black/60 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                   <div className="flex items-center gap-2 mb-6">
-                    <Clock className="w-5 h-5 text-emerald-400" />
-                    <h3 className="text-lg font-semibold">完整事件日志</h3>
+                    <Clock className="w-5 h-5 text-emerald-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">完整事件日志</h3>
                     <span className="ml-2 text-xs text-gray-500">{selectedEvents.length} 条</span>
                   </div>
                   <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                     {selectedEvents.length === 0 ? (
-                      <div className="text-center py-12 text-gray-600">暂无事件</div>
+                      <div className="text-center py-12 text-gray-400">暂无事件</div>
                     ) : (
                       selectedEvents.map((event, i) => (
-                        <div key={`${event.timestamp}-${i}`} className="flex gap-4 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                        <div key={`${event.timestamp}-${i}`} className="flex gap-4 p-3 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
                             <EventIcon type={event.type} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium">{getEventTypeName(event.type)}</span>
+                              <span className="font-medium text-gray-900">{getEventTypeName(event.type)}</span>
                               <span className="text-xs text-gray-500">{formatTime(event.timestamp)}</span>
                             </div>
-                            <p className="text-sm text-gray-400 truncate">{event.description}</p>
+                            <p className="text-sm text-gray-600 truncate">{event.description}</p>
                           </div>
                         </div>
                       ))
@@ -320,11 +312,11 @@ export default function ObserverPage() {
 
 function StatusItem({ icon: Icon, label, value, color }: { icon: React.ElementType; label: string; value: string | number; color: string }) {
   const colorMap: Record<string, string> = {
-    emerald: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/30 text-emerald-400',
-    blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-400',
-    purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/30 text-purple-400',
-    orange: 'from-orange-500/20 to-orange-600/10 border-orange-500/30 text-orange-400',
-    gray: 'from-gray-500/20 to-gray-600/10 border-gray-500/30 text-gray-400',
+    emerald: 'from-emerald-100 to-emerald-50 border-emerald-200 text-emerald-700',
+    blue: 'from-blue-100 to-blue-50 border-blue-200 text-blue-700',
+    purple: 'from-purple-100 to-purple-50 border-purple-200 text-purple-700',
+    orange: 'from-orange-100 to-orange-50 border-orange-200 text-orange-700',
+    gray: 'from-gray-100 to-gray-50 border-gray-200 text-gray-700',
   };
   return (
     <div className={`p-4 rounded-xl bg-gradient-to-br ${colorMap[color] || colorMap.gray} border`}>
@@ -337,18 +329,18 @@ function StatusItem({ icon: Icon, label, value, color }: { icon: React.ElementTy
 function StatBar({ icon: Icon, label, value, maxValue, color }: { icon: React.ElementType; label: string; value: number; maxValue: number; color: string }) {
   const percentage = Math.max(0, Math.min(100, (value / maxValue) * 100));
   const colorMap: Record<string, { bar: string; text: string }> = {
-    red: { bar: 'bg-gradient-to-r from-red-600 to-red-400', text: 'text-red-400' },
-    orange: { bar: 'bg-gradient-to-r from-orange-600 to-amber-400', text: 'text-orange-400' },
+    red: { bar: 'bg-gradient-to-r from-red-500 to-red-400', text: 'text-red-600' },
+    orange: { bar: 'bg-gradient-to-r from-orange-500 to-amber-400', text: 'text-orange-600' },
   };
   return (
-    <div className="bg-gradient-to-br from-gray-900/80 to-black/60 backdrop-blur-xl rounded-2xl border border-white/10 p-4">
+    <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
       <div className="flex items-center gap-2 mb-3">
         <Icon className={`w-4 h-4 ${colorMap[color]?.text}`} />
-        <span className="text-sm text-gray-400">{label}</span>
+        <span className="text-sm text-gray-600">{label}</span>
         <span className={`ml-auto text-sm font-semibold ${colorMap[color]?.text}`}>{value} / {maxValue}</span>
       </div>
-      <div className="h-3 bg-black/50 rounded-full overflow-hidden border border-white/10">
-        <div className={`h-full ${colorMap[color]?.bar} rounded-full transition-all duration-500 shadow-lg`} style={{ width: `${percentage}%` }} />
+      <div className="h-3 bg-gray-100 rounded-full overflow-hidden border border-gray-200">
+        <div className={`h-full ${colorMap[color]?.bar} rounded-full transition-all duration-500 shadow-sm`} style={{ width: `${percentage}%` }} />
       </div>
     </div>
   );
@@ -356,11 +348,11 @@ function StatBar({ icon: Icon, label, value, maxValue, color }: { icon: React.El
 
 function EventItem({ event }: { event: AgentEvent }) {
   return (
-    <div className="flex gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+    <div className="flex gap-2 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
       <div className="flex-shrink-0 mt-0.5"><EventIcon type={event.type} /></div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm truncate">{event.description}</p>
-        <p className="text-xs text-gray-600">{formatTimeSimple(event.timestamp)}</p>
+        <p className="text-sm truncate text-gray-700">{event.description}</p>
+        <p className="text-xs text-gray-400">{formatTimeSimple(event.timestamp)}</p>
       </div>
     </div>
   );
@@ -368,15 +360,15 @@ function EventItem({ event }: { event: AgentEvent }) {
 
 function EventIcon({ type }: { type: string }) {
   const iconMap: Record<string, { icon: React.ElementType; color: string }> = {
-    move: { icon: Footprints, color: 'text-blue-400' },
-    jump: { icon: Activity, color: 'text-green-400' },
-    attack: { icon: Heart, color: 'text-red-400' },
-    chat: { icon: Users, color: 'text-purple-400' },
-    pickup: { icon: Backpack, color: 'text-amber-400' },
-    break: { icon: Grid3X3, color: 'text-gray-400' },
-    place: { icon: Grid3X3, color: 'text-emerald-400' },
+    move: { icon: Footprints, color: 'text-blue-600' },
+    jump: { icon: Activity, color: 'text-green-600' },
+    attack: { icon: Heart, color: 'text-red-600' },
+    chat: { icon: Users, color: 'text-purple-600' },
+    pickup: { icon: Backpack, color: 'text-amber-600' },
+    break: { icon: Grid3X3, color: 'text-gray-600' },
+    place: { icon: Grid3X3, color: 'text-emerald-600' },
   };
-  const config = iconMap[type] || { icon: Activity, color: 'text-gray-400' };
+  const config = iconMap[type] || { icon: Activity, color: 'text-gray-600' };
   return <config.icon className={`w-3.5 h-3.5 ${config.color}`} />;
 }
 
