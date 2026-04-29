@@ -21,7 +21,8 @@ interface DemoAgentConfig {
   username: string;
   serverHost: string;
   serverPort: number;
-  createdAt?: number; // 可选，自动恢复时使用
+  createdAt?: number; // 自动恢复时使用
+  pausedAt?: number; // 暂停时间，存在表示离线但保留配置
 }
 
 // 从 localStorage 加载保存的演示 Agent 配置
@@ -366,7 +367,50 @@ export function useDemoAgent() {
     });
   }, []);
 
-  // 停止单个演示 Agent
+  // 暂停单个演示 Agent（仅标记离线，保留配置）
+  const pauseDemoAgent = useCallback((agentId: string) => {
+    const interval = intervals.get(agentId);
+    if (interval) {
+      clearInterval(interval);
+      setIntervals(prev => {
+        const next = new Map(prev);
+        next.delete(agentId);
+        return next;
+      });
+    }
+    // 仅标记暂停时间，不删除配置
+    setAgentConfigs(prev => {
+      const next = new Map(prev);
+      const config = next.get(agentId);
+      if (config) {
+        next.set(agentId, { ...config, pausedAt: Date.now() });
+        saveAgents(next);
+      }
+      return next;
+    });
+    console.log('[Demo] Agent paused (offline):', agentId);
+  }, [intervals]);
+
+  // 重新连接已暂停的演示 Agent
+  const resumeDemoAgent = useCallback((agentId: string) => {
+    const config = agentConfigs.get(agentId);
+    if (!config || !config.pausedAt) {
+      console.log('[Demo] Agent not paused:', agentId);
+      return;
+    }
+    // 清除暂停标记，重新启动
+    setAgentConfigs(prev => {
+      const next = new Map(prev);
+      const updatedConfig = { ...config };
+      delete updatedConfig.pausedAt;
+      next.set(agentId, updatedConfig);
+      saveAgents(next);
+      return next;
+    });
+    console.log('[Demo] Agent resuming:', agentId);
+  }, [agentConfigs]);
+
+  // 停止单个演示 Agent（完全删除配置）
   const stopDemoAgent = useCallback((agentId: string) => {
     const interval = intervals.get(agentId);
     if (interval) {
@@ -383,7 +427,7 @@ export function useDemoAgent() {
       saveAgents(next);
       return next;
     });
-    console.log('[Demo] Agent stopped:', agentId);
+    console.log('[Demo] Agent stopped (removed):', agentId);
   }, [intervals]);
 
   // 停止所有演示 Agent
@@ -403,6 +447,8 @@ export function useDemoAgent() {
   return {
     activeAgents: agentConfigs,
     startDemoAgent,
+    pauseDemoAgent,
+    resumeDemoAgent,
     stopDemoAgent,
     stopAllDemoAgents,
     isConnected,

@@ -8,9 +8,9 @@ import { AgentCard } from '@/components/agent/agent-card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MiniMap } from '@/components/agent/mini-map';
+import type { AgentStatus, WorldSnapshot } from '@/lib/types/agent';
 import { InventoryGrid } from '@/components/agent/inventory-grid';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import type { AgentStatus, WorldSnapshot } from '@/lib/types/agent';
 
 export default function ObserverPage() {
   const [viewMode, setViewMode] = useState<'landing' | 'list' | 'detail'>('landing');
@@ -19,9 +19,44 @@ export default function ObserverPage() {
   const [disconnectConfirm, setDisconnectConfirm] = useState<{ open: boolean; agentId: string | null; username: string | null }>({ open: false, agentId: null, username: null });
 
   const { agents, events, worldSnapshots, isConnected } = useAgentObserver();
-  const { activeAgents, startDemoAgent, stopDemoAgent } = useDemoAgent();
+  const { activeAgents, startDemoAgent, pauseDemoAgent, resumeDemoAgent, stopDemoAgent } = useDemoAgent();
 
-  const allAgents = agents;
+  // 合并实时 Agent 状态和本地演示 Agent 配置（包含已暂停的）
+  const allAgents = new Map(agents);
+  activeAgents.forEach((config, agentId) => {
+    if (!allAgents.has(agentId)) {
+      // 如果是暂停的演示 Agent，使用配置创建离线状态
+      const pausedAgent: AgentStatus = {
+        id: agentId,
+        username: config.username,
+        world: config.serverHost,
+        connected: false,
+        position: { x: 0, y: 0, z: 0 },
+        health: 0,
+        maxHealth: 20,
+        food: 0,
+        saturation: 0,
+        gamemode: 'survival',
+        inventory: [],
+        equipment: {
+          head: { slot: -1, name: '', displayName: '', count: 0 },
+          chest: { slot: -2, name: '', displayName: '', count: 0 },
+          legs: { slot: -3, name: '', displayName: '', count: 0 },
+          feet: { slot: -4, name: '', displayName: '', count: 0 },
+          mainhand: { slot: -1, name: '', displayName: '', count: 0 },
+        },
+        dimension: 'overworld',
+        yaw: 0,
+        pitch: 0,
+        isOnGround: false,
+        isSleeping: false,
+        isSprinting: false,
+        isSneaking: false,
+        lastUpdated: config.pausedAt || Date.now(),
+      };
+      allAgents.set(agentId, pausedAgent);
+    }
+  });
   const agentCount = allAgents.size;
 
   const handleAgentClick = (agentId: string) => {
@@ -287,10 +322,24 @@ export default function ObserverPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setDisconnectConfirm({ open: true, agentId: selectedAgentId, username: selectedAgent?.username || null })}
-                  className="text-red-500 border-red-200 hover:bg-red-50"
+                  className="text-orange-500 border-orange-200 hover:bg-orange-50"
                 >
-                  断开连接
+                  标记离线
                 </Button>
+                {/* 重新连接按钮 - 仅对已暂停的演示 Agent 显示 */}
+                {selectedAgentId && activeAgents.get(selectedAgentId)?.pausedAt && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      resumeDemoAgent(selectedAgentId!);
+                    }}
+                    className="bg-emerald-500 hover:bg-emerald-600"
+                  >
+                    <Play className="w-4 h-4 mr-1" />
+                    重新连接
+                  </Button>
+                )}
               </div>
             </div>
           </header>
@@ -442,18 +491,16 @@ export default function ObserverPage() {
         </div>
       )}
 
-      {/* 断开连接确认对话框 */}
+      {/* 标记离线确认对话框 */}
       <AlertDialog open={disconnectConfirm.open} onOpenChange={(open) => setDisconnectConfirm((prev) => ({ ...prev, open }))}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>确认断开连接</AlertDialogTitle>
+            <AlertDialogTitle>确认标记离线</AlertDialogTitle>
             <AlertDialogDescription>
-              确定要断开与 <span className="font-semibold text-foreground">{disconnectConfirm.username}</span> 的连接吗？
-              {activeAgents.has(disconnectConfirm.agentId || '') && (
-                <span className="block mt-2 text-amber-600">
-                  这是演示 Agent，断开后配置将被清除。
-                </span>
-              )}
+              确定要将 <span className="font-semibold text-foreground">{disconnectConfirm.username}</span> 标记为离线吗？
+              <span className="block mt-2 text-stone-600">
+                配置将被保留，后续可以重新连接。
+              </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -461,17 +508,17 @@ export default function ObserverPage() {
             <AlertDialogAction
               onClick={() => {
                 if (disconnectConfirm.agentId) {
-                  stopDemoAgent(disconnectConfirm.agentId);
-                  // 如果是从详情页断开的，退回到列表页
-                  if (viewMode === 'detail' && disconnectConfirm.agentId === selectedAgentId) {
+                  pauseDemoAgent(disconnectConfirm.agentId);
+                  // 退回到列表页
+                  if (viewMode === 'detail') {
                     setViewMode('list');
                     setSelectedAgentId(null);
                   }
                 }
               }}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-orange-500 hover:bg-orange-600"
             >
-              确认断开
+              确认离线
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
