@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { MiniMap } from '@/components/agent/mini-map';
 import type { AgentStatus, WorldSnapshot } from '@/lib/types/agent';
 import { InventoryGrid } from '@/components/agent/inventory-grid';
+import Globe3D from '@/components/globe-3d';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -179,72 +180,21 @@ export default function ObserverPage() {
             </div>
           </div>
 
-          {/* Right Side - Globe Visual */}
+          {/* Right Side - 3D Globe */}
           <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden bg-stone-50">
             {/* Subtle grid background */}
-            <div className="absolute inset-0 opacity-[0.04]" style={{
+            <div className="absolute inset-0 opacity-[0.03]" style={{
               backgroundImage: 'linear-gradient(#57534e 1px, transparent 1px), linear-gradient(90deg, #57534e 1px, transparent 1px)',
               backgroundSize: '40px 40px',
             }} />
 
-            {/* Main globe */}
-            <div className="relative w-64 h-64">
-              {/* Globe sphere - gradient circle */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-100 via-emerald-50 to-stone-100 shadow-xl" />
-              {/* Globe grid lines - horizontal */}
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 260 260">
-                {/* Horizontal grid lines */}
-                <ellipse cx="130" cy="60" rx="110" ry="30" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.25" />
-                <ellipse cx="130" cy="100" rx="125" ry="40" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.25" />
-                <ellipse cx="130" cy="130" rx="130" ry="45" fill="none" stroke="#5d9b3a" strokeWidth="0.6" opacity="0.3" />
-                <ellipse cx="130" cy="160" rx="125" ry="40" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.25" />
-                <ellipse cx="130" cy="200" rx="110" ry="30" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.25" />
-                {/* Vertical grid lines */}
-                <ellipse cx="130" cy="130" rx="30" ry="128" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.25" />
-                <ellipse cx="130" cy="130" rx="60" ry="128" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.25" />
-                <ellipse cx="130" cy="130" rx="90" ry="128" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.25" />
-                <ellipse cx="130" cy="130" rx="120" ry="128" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.2" />
-                {/* Outer circle */}
-                <circle cx="130" cy="130" r="128" fill="none" stroke="#5d9b3a" strokeWidth="1" opacity="0.3" />
-              </svg>
-
-              {/* Floating block avatars around the globe */}
-              {/* Top-left - grass block */}
-              <div className="absolute -top-6 left-4 w-10 h-10 rounded-lg bg-gradient-to-b from-emerald-400 to-emerald-500 shadow-md flex items-center justify-center border border-emerald-300/50" title="Grass Block">
-                <span className="text-white text-xs font-bold">⛏</span>
-              </div>
-
-              {/* Top-right - diamond block */}
-              <div className="absolute -top-4 right-2 w-9 h-9 rounded-lg bg-gradient-to-b from-cyan-300 to-cyan-400 shadow-md flex items-center justify-center border border-cyan-200/50" title="Diamond Block">
-                <span className="text-white text-xs">💎</span>
-              </div>
-
-              {/* Left - stone block */}
-              <div className="absolute top-1/2 -left-8 -translate-y-1/2 w-8 h-8 rounded-lg bg-gradient-to-b from-stone-300 to-stone-400 shadow-md flex items-center justify-center border border-stone-200/50" title="Stone Block">
-                <span className="text-stone-600 text-xs">🪨</span>
-              </div>
-
-              {/* Right - wood block */}
-              <div className="absolute top-1/2 -right-7 -translate-y-1/2 w-9 h-9 rounded-lg bg-gradient-to-b from-amber-300 to-amber-400 shadow-md flex items-center justify-center border border-amber-200/50" title="Wood Block">
-                <span className="text-amber-800 text-xs">🪵</span>
-              </div>
-
-              {/* Bottom-left - redstone */}
-              <div className="absolute -bottom-5 left-8 w-8 h-8 rounded-lg bg-gradient-to-b from-red-300 to-red-400 shadow-md flex items-center justify-center border border-red-200/50" title="Redstone">
-                <span className="text-white text-xs">🔴</span>
-              </div>
-
-              {/* Bottom-right - gold block */}
-              <div className="absolute -bottom-4 right-6 w-9 h-9 rounded-lg bg-gradient-to-b from-yellow-300 to-yellow-400 shadow-md flex items-center justify-center border border-yellow-200/50" title="Gold Block">
-                <span className="text-yellow-800 text-xs">🥇</span>
-              </div>
-
-              {/* Center glow */}
-              <div className="absolute inset-8 rounded-full bg-emerald-200/20 blur-xl" />
+            {/* 3D Globe */}
+            <div className="w-full h-full">
+              <Globe3D />
             </div>
 
-            {/* Tagline below globe */}
-            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 text-center">
+            {/* Tagline */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center">
               <p className="text-sm font-medium text-stone-500">
                 ⛏ Explore the Block World
               </p>
