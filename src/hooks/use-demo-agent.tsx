@@ -15,10 +15,39 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+const DEMO_AGENTS_STORAGE_KEY = 'minecraft-observer-demo-agents';
+
 interface DemoAgentConfig {
   username: string;
   serverHost: string;
   serverPort: number;
+  createdAt?: number; // 可选，自动恢复时使用
+}
+
+// 从 localStorage 加载保存的演示 Agent 配置
+function loadSavedAgents(): Map<string, DemoAgentConfig> {
+  if (typeof window === 'undefined') return new Map();
+  try {
+    const saved = localStorage.getItem(DEMO_AGENTS_STORAGE_KEY);
+    if (saved) {
+      const arr = JSON.parse(saved);
+      return new Map(arr);
+    }
+  } catch (e) {
+    console.error('[Demo] Failed to load saved agents:', e);
+  }
+  return new Map();
+}
+
+// 保存演示 Agent 配置到 localStorage
+function saveAgents(agents: Map<string, DemoAgentConfig>) {
+  if (typeof window === 'undefined') return;
+  try {
+    const arr = Array.from(agents.entries());
+    localStorage.setItem(DEMO_AGENTS_STORAGE_KEY, JSON.stringify(arr));
+  } catch (e) {
+    console.error('[Demo] Failed to save agents:', e);
+  }
 }
 
 // 模拟物品数据
@@ -68,8 +97,10 @@ export function useDemoAgent() {
   const [agentConfigs, setAgentConfigs] = useState<Map<string, DemoAgentConfig>>(new Map());
   const [intervals, setIntervals] = useState<Map<string, ReturnType<typeof setInterval>>>(new Map());
   const [isConnected, setIsConnected] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoRestoreDoneRef = useRef(false);
 
   // 连接到 WebSocket（Promise 版本）
   const connectWs = useCallback((): Promise<WebSocket> => {
@@ -126,16 +157,16 @@ export function useDemoAgent() {
     };
   };
 
-  // 启动演示 Agent
-  const startDemoAgent = useCallback(async (config: DemoAgentConfig) => {
+  // 启动演示 Agent（支持传入已有的 agentId 用于自动恢复）
+  const startDemoAgent = useCallback(async (config: DemoAgentConfig, existingAgentId?: string) => {
     try {
       // 连接 WebSocket
       const ws = await connectWs();
       console.log('[Demo] WebSocket ready, starting agent:', config.username);
 
-      // 生成 agentId
+      // 生成 agentId（如果是自动恢复，使用原来的 ID）
       const timestamp = Date.now();
-      const agentId = `demo-${config.username}-${timestamp}`;
+      const agentId = existingAgentId || `demo-${config.username}-${timestamp}`;
       const initialPosition = { x: 0, y: 64, z: 0 };
 
       // 发送注册消息
@@ -201,8 +232,16 @@ export function useDemoAgent() {
         },
       }));
 
-      // 保存配置
-      setAgentConfigs(prev => new Map(prev).set(agentId, config));
+      // 保存配置到 state 和 localStorage
+      const configWithTimestamp: DemoAgentConfig = {
+        ...config,
+        createdAt: Date.now(),
+      };
+      setAgentConfigs(prev => {
+        const next = new Map(prev).set(agentId, configWithTimestamp);
+        saveAgents(next);
+        return next;
+      });
 
       // 启动状态更新定时器
       let currentPos = { ...initialPosition };
@@ -296,12 +335,36 @@ export function useDemoAgent() {
     }
   }, [connectWs]);
 
-  // 组件挂载时连接 WebSocket
+  // 组件挂载时连接 WebSocket 并自动恢复保存的 Agent
   useEffect(() => {
-    connectWs().catch(err => {
+    // 加载保存的 Agent 配置
+    const savedAgents = loadSavedAgents();
+    if (savedAgents.size > 0) {
+      console.log('[Demo] Found saved agents, restoring:', savedAgents.size);
+      setAgentConfigs(savedAgents);
+    }
+    
+    // 连接 WebSocket
+    connectWs().then(() => {
+      // WebSocket 连接成功后，自动恢复保存的 Agent
+      if (savedAgents.size > 0 && !autoRestoreDoneRef.current) {
+        autoRestoreDoneRef.current = true;
+        setIsInitialized(true);
+        
+        // 延迟恢复以确保 WebSocket 完全就绪
+        setTimeout(() => {
+          savedAgents.forEach((config, agentId) => {
+            console.log('[Demo] Auto-restoring agent:', config.username);
+            startDemoAgent(config, agentId).catch(err => {
+              console.error('[Demo] Auto-restore failed for:', config.username, err);
+            });
+          });
+        }, 1000);
+      }
+    }).catch(err => {
       console.error('[Demo] Initial connection failed:', err);
     });
-  }, [connectWs]);
+  }, []);
 
   // 停止单个演示 Agent
   const stopDemoAgent = useCallback((agentId: string) => {
@@ -317,6 +380,7 @@ export function useDemoAgent() {
     setAgentConfigs(prev => {
       const next = new Map(prev);
       next.delete(agentId);
+      saveAgents(next);
       return next;
     });
     console.log('[Demo] Agent stopped:', agentId);
@@ -327,6 +391,7 @@ export function useDemoAgent() {
     intervals.forEach((interval) => clearInterval(interval));
     setIntervals(new Map());
     setAgentConfigs(new Map());
+    localStorage.removeItem(DEMO_AGENTS_STORAGE_KEY);
     
     if (wsRef.current) {
       wsRef.current.close();
