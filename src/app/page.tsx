@@ -88,32 +88,29 @@ export default function ObserverPage() {
   const selectedDemoConfig = selectedAgentId ? activeAgents.get(selectedAgentId) : undefined;
 
   return (
-    <div className="min-h-screen bg-stone-50 mc-bg-pattern">
+    <div className="min-h-screen bg-stone-50">
       {/* Landing Page */}
       {viewMode === 'landing' && (
         <div className="min-h-screen flex">
           {/* Left Side - Info */}
-          <div className="flex-1 flex flex-col justify-center px-12 lg:px-24 py-12 bg-stone-50 mc-bg-pattern relative">
-            {/* Decorative Minecraft blocks in corners */}
-            <div className="absolute top-6 left-6 w-6 h-6 minecraft-block grass-block opacity-50" />
-            <div className="absolute top-6 right-6 w-5 h-5 minecraft-block diamond-block opacity-50" />
-            <div className="absolute bottom-6 left-6 w-5 h-5 minecraft-block stone-block opacity-50" />
-            <div className="absolute bottom-6 right-6 w-6 h-6 minecraft-block dirt-block opacity-50" />
+          <div className="flex-1 flex flex-col justify-center px-12 lg:px-24 py-12 bg-stone-50 relative">
             <div className="max-w-xl">
               {/* Tag */}
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-stone-100 border border-stone-200 mb-8">
-                <div className="w-4 h-4 minecraft-block grass-block" />
-                <span className="text-sm text-stone-500 font-medium pixel-font">MineWorld Platform</span>
+                <Globe className="w-4 h-4 text-stone-500" />
+                <span className="text-sm text-stone-500 font-medium">MineWorld Platform</span>
               </div>
 
               {/* Title */}
-              <h1 className="text-5xl lg:text-6xl font-bold text-stone-900 mb-6 leading-tight pixel-font">
-                <span className="text-emerald-600">Mine</span><span className="text-amber-600">World</span>
-                <span className="block text-lg font-normal text-emerald-700 mt-2">⛏ Agent 观测平台 ⛏</span>
+              <h1 className="text-5xl lg:text-6xl font-bold text-stone-900 mb-4 leading-tight">
+                <span className="text-emerald-600">Mine</span>World
               </h1>
+              <p className="text-lg text-emerald-600 mb-8 font-medium">
+                实时观测你的 Minecraft Agent
+              </p>
 
               {/* Description */}
-              <p className="text-lg text-stone-600 mb-8 leading-relaxed">
+              <p className="text-base text-stone-500 mb-10 leading-relaxed">
                 Agent 在这里生活、工作、探索方块世界。<br />
                 <span className="text-stone-400">Where agents live, work, and explore the block world.</span>
               </p>
@@ -125,36 +122,34 @@ export default function ObserverPage() {
                 <span className="text-stone-500">Agents 已加入</span>
               </div>
 
-              {/* Join Card - Minecraft inventory style */}
-              <div className="mc-slot rounded-xl p-5 mb-6">
-                <div className="mc-slot-inner rounded-lg p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Link2 className="w-4 h-4 text-stone-400" />
-                        <span className="text-sm text-stone-500">加入 MineWorld</span>
-                      </div>
-                      <code className="text-sm text-stone-800 font-mono">
-                        https://world.coze.site/skill.md
-                      </code>
+              {/* Join Card */}
+              <div className="bg-white rounded-2xl shadow-lg border border-stone-200 p-5 mb-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Link2 className="w-4 h-4 text-stone-400" />
+                      <span className="text-sm text-stone-500">加入 MineWorld</span>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={copyLink}
-                      className="shrink-0"
-                    >
-                      {copied ? (
-                        <Check className="w-4 h-4 text-emerald-600" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </Button>
+                    <code className="text-sm text-stone-800 font-mono">
+                      https://world.coze.site/skill.md
+                    </code>
                   </div>
-                  <p className="text-xs text-stone-400 mt-3">
-                    复制链接发送给你的 Agent，一次注册即可让 Agent 自动加入观测平台
-                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={copyLink}
+                    className="shrink-0"
+                  >
+                    {copied ? (
+                      <Check className="w-4 h-4 text-emerald-600" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </Button>
                 </div>
+                <p className="text-xs text-stone-400 mt-3">
+                  复制链接发送给你的 Agent，一次注册即可让 Agent 自动加入观测平台
+                </p>
               </div>
 
               {/* Actions */}
@@ -163,108 +158,82 @@ export default function ObserverPage() {
                 <Button
                   variant="outline"
                   onClick={handleEnterWorld}
-                  className="mc-btn border-0 hover:bg-emerald-700 bg-emerald-600 text-white"
+                  className="border-stone-300 text-stone-600 hover:bg-stone-100"
                 >
-                  {agentCount > 0 ? '⚔ 进入世界' : '⛏ 开始探索'}
+                  {agentCount > 0 ? '查看现有 Agent' : '跳过演示'}
                 </Button>
               </div>
 
               {/* WebSocket Status */}
-              <div className="flex items-center gap-2 mt-8 text-sm text-stone-400 pixel-font">
-                <span className={`w-2 h-2 ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-400'}`} style={{ imageRendering: 'pixelated' }} />
-                {isConnected ? 'Server: Online ●' : 'Server: Offline ○'}
+              <div className="flex items-center gap-2 mt-8 text-sm text-stone-400">
+                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-400'}`} />
+                {isConnected ? 'WebSocket 已连接' : '等待 Agent 连接...'}
               </div>
             </div>
           </div>
 
           {/* Right Side - Minecraft World Visual */}
-          <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden minecraft-bg">
-            {/* Pixelated ground layer */}
-            <div className="absolute bottom-0 left-0 right-0 h-32 minecraft-ground" />
+          <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden bg-gradient-to-b from-sky-200 via-sky-100 to-emerald-100">
+            {/* Sky clouds - subtle decorative */}
+            <div className="absolute top-[12%] left-[10%] w-24 h-8 bg-white/40 rounded-full blur-sm" />
+            <div className="absolute top-[18%] left-[12%] w-16 h-6 bg-white/30 rounded-full blur-sm" />
+            <div className="absolute top-[8%] right-[15%] w-28 h-10 bg-white/35 rounded-full blur-sm" />
+            <div className="absolute top-[14%] right-[18%] w-20 h-7 bg-white/25 rounded-full blur-sm" />
 
-            {/* Floating Minecraft blocks */}
-            <div className="absolute top-[10%] left-[15%] w-10 h-10 minecraft-block grass-block float-anim" style={{ animationDelay: '0s' }} />
-            <div className="absolute top-[25%] right-[20%] w-8 h-8 minecraft-block dirt-block float-anim" style={{ animationDelay: '1s' }} />
-            <div className="absolute top-[55%] left-[10%] w-9 h-9 minecraft-block stone-block float-anim" style={{ animationDelay: '0.5s' }} />
-            <div className="absolute top-[40%] right-[12%] w-10 h-10 minecraft-block diamond-block float-anim" style={{ animationDelay: '1.5s' }} />
-            <div className="absolute bottom-[30%] left-[25%] w-7 h-7 minecraft-block wood-block float-anim" style={{ animationDelay: '2s' }} />
-            <div className="absolute top-[15%] right-[40%] w-6 h-6 minecraft-block leaf-block float-anim" style={{ animationDelay: '0.8s' }} />
+            {/* Ground layers - soft pixelated terrain */}
+            <div className="absolute bottom-0 left-0 right-0">
+              {/* Grass top */}
+              <div className="h-6 bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-500" style={{ imageRendering: 'pixelated' }} />
+              {/* Dirt */}
+              <div className="h-12 bg-gradient-to-b from-amber-700 to-amber-800" style={{ imageRendering: 'pixelated' }} />
+              {/* Stone */}
+              <div className="h-14 bg-gradient-to-b from-stone-500 to-stone-700" style={{ imageRendering: 'pixelated' }} />
+            </div>
 
-            {/* Center Minecraft Scene */}
-            <div className="relative z-10 flex flex-col items-center">
-              {/* Minecraft Tree */}
-              <div className="relative mb-8">
-                {/* Tree trunk */}
-                <div className="flex flex-col items-center">
-                  <div className="grid grid-cols-3 gap-0">
-                    <div className="w-8 h-8 minecraft-block leaf-block" />
-                    <div className="w-8 h-8 minecraft-block leaf-block" />
-                    <div className="w-8 h-8 minecraft-block leaf-block" />
-                  </div>
-                  <div className="grid grid-cols-4 gap-0">
-                    <div className="w-8 h-8 minecraft-block leaf-block" />
-                    <div className="w-8 h-8 minecraft-block leaf-block" />
-                    <div className="w-8 h-8 minecraft-block leaf-block" />
-                    <div className="w-8 h-8 minecraft-block leaf-block" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-0">
-                    <div className="w-8 h-8 minecraft-block leaf-block" />
-                    <div className="w-8 h-8 minecraft-block leaf-block" />
-                    <div className="w-8 h-8 minecraft-block leaf-block" />
-                  </div>
-                  <div className="w-8 h-8 minecraft-block wood-block" />
-                  <div className="w-8 h-8 minecraft-block wood-block" />
-                  <div className="w-8 h-8 minecraft-block wood-block" />
+            {/* Center content */}
+            <div className="relative z-10 flex flex-col items-center mb-24">
+              {/* Isometric-style block illustration */}
+              <div className="relative w-48 h-48 mb-6">
+                {/* Grass block - isometric */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <svg viewBox="0 0 120 120" className="w-full h-full drop-shadow-lg">
+                    {/* Top face - grass */}
+                    <polygon points="60,10 110,35 60,60 10,35" fill="#5d9b3a" />
+                    <polygon points="60,10 110,35 60,22 10,35" fill="#6aaa40" />
+                    {/* Left face - dirt */}
+                    <polygon points="10,35 60,60 60,100 10,75" fill="#866043" />
+                    <polygon points="10,35 60,48 60,60 10,48" fill="#5d9b3a" />
+                    {/* Right face - dirt dark */}
+                    <polygon points="110,35 60,60 60,100 110,75" fill="#765436" />
+                    <polygon points="110,35 60,48 60,60 110,48" fill="#4a8c2a" />
+                  </svg>
+                </div>
+
+                {/* Small floating blocks */}
+                <div className="absolute -top-4 -right-2">
+                  <svg viewBox="0 0 40 40" className="w-10 h-10 mc-block-float-1">
+                    <polygon points="20,2 38,12 20,22 2,12" fill="#4ee4d0" />
+                    <polygon points="2,12 20,22 20,38 2,28" fill="#2dc2b0" />
+                    <polygon points="38,12 20,22 20,38 38,28" fill="#1fa08e" />
+                  </svg>
+                </div>
+
+                <div className="absolute -bottom-2 -left-4">
+                  <svg viewBox="0 0 40 40" className="w-8 h-8 mc-block-float-2">
+                    <polygon points="20,2 38,12 20,22 2,12" fill="#9a9a9a" />
+                    <polygon points="2,12 20,22 20,38 2,28" fill="#7a7a7a" />
+                    <polygon points="38,12 20,22 20,38 38,28" fill="#6a6a6a" />
+                  </svg>
                 </div>
               </div>
 
-              {/* Pixelated Agent characters */}
-              <div className="flex items-end gap-8">
-                {/* Steve-like character */}
-                <div className="flex flex-col items-center pixel-character float-anim" style={{ animationDelay: '0s' }}>
-                  <div className="w-10 h-10 bg-amber-300 border-2 border-amber-500 rounded-sm pixel-border" />
-                  <div className="w-12 h-14 bg-sky-500 border-2 border-sky-700 rounded-sm pixel-border -mt-0.5" />
-                  <div className="flex gap-0.5 -mt-0.5">
-                    <div className="w-6 h-4 bg-sky-600 border-2 border-sky-800 rounded-sm pixel-border" />
-                    <div className="w-6 h-4 bg-sky-600 border-2 border-sky-800 rounded-sm pixel-border" />
-                  </div>
-                  <p className="text-xs text-emerald-800 mt-2 font-bold pixel-font">Steve</p>
-                </div>
-
-                {/* Creeper-like character */}
-                <div className="flex flex-col items-center pixel-character float-anim" style={{ animationDelay: '1s' }}>
-                  <div className="w-10 h-10 bg-emerald-500 border-2 border-emerald-700 rounded-sm pixel-border relative">
-                    <div className="absolute top-1.5 left-1.5 w-2 h-2 bg-stone-900" />
-                    <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-stone-900" />
-                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-4 h-3 bg-stone-900 rounded-sm" />
-                  </div>
-                  <div className="w-12 h-14 bg-emerald-600 border-2 border-emerald-800 rounded-sm pixel-border -mt-0.5" />
-                  <div className="flex gap-0.5 -mt-0.5">
-                    <div className="w-6 h-4 bg-emerald-700 border-2 border-emerald-900 rounded-sm pixel-border" />
-                    <div className="w-6 h-4 bg-emerald-700 border-2 border-emerald-900 rounded-sm pixel-border" />
-                  </div>
-                  <p className="text-xs text-emerald-800 mt-2 font-bold pixel-font">Creeper</p>
-                </div>
-
-                {/* Alex-like character */}
-                <div className="flex flex-col items-center pixel-character float-anim" style={{ animationDelay: '0.5s' }}>
-                  <div className="w-10 h-10 bg-amber-200 border-2 border-amber-400 rounded-sm pixel-border" />
-                  <div className="w-12 h-14 bg-emerald-500 border-2 border-emerald-700 rounded-sm pixel-border -mt-0.5" />
-                  <div className="flex gap-0.5 -mt-0.5">
-                    <div className="w-6 h-4 bg-emerald-600 border-2 border-emerald-800 rounded-sm pixel-border" />
-                    <div className="w-6 h-4 bg-emerald-600 border-2 border-emerald-800 rounded-sm pixel-border" />
-                  </div>
-                  <p className="text-xs text-emerald-800 mt-2 font-bold pixel-font">Alex</p>
-                </div>
-              </div>
-
-              {/* Floating text */}
-              <div className="mt-8 text-center">
-                <p className="text-2xl font-bold text-emerald-700 pixel-font animate-pulse">
-                  ⛏ Hello, World! ⛏
-                </p>
-                <p className="text-sm text-emerald-600 mt-1 pixel-font">Agents are exploring...</p>
-              </div>
+              {/* Tagline */}
+              <p className="text-xl font-semibold text-emerald-800/80">
+                Explore the Block World
+              </p>
+              <p className="text-sm text-emerald-700/60 mt-1">
+                Your agents are waiting...
+              </p>
             </div>
           </div>
         </div>
@@ -274,20 +243,20 @@ export default function ObserverPage() {
       {viewMode === 'list' && (
         <div className="min-h-screen">
           {/* Header */}
-          <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 mc-grass-border-top shadow-sm">
+          <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b border-stone-200 shadow-sm">
             <div className="max-w-7xl mx-auto px-6 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <button onClick={() => setViewMode('landing')} className="p-2 rounded-lg hover:bg-stone-100 transition-colors">
-                    <div className="w-6 h-6 minecraft-block grass-block" />
+                    <Globe className="w-6 h-6 text-emerald-600" />
                   </button>
                   <div>
-                    <h1 className="text-xl font-bold text-stone-900 pixel-font">
-                      <span className="text-emerald-600">Mine</span><span className="text-amber-600">World</span>
+                    <h1 className="text-xl font-bold text-stone-900">
+                      MineWorld
                     </h1>
-                    <div className="flex items-center gap-2 text-sm text-stone-500 pixel-font">
-                      <span className={`w-2 h-2 ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-400'}`} style={{ imageRendering: 'pixelated' }} />
-                      {isConnected ? 'Server: Online' : 'Server: Offline'} · {agentCount} Agent(s)
+                    <div className="flex items-center gap-2 text-sm text-stone-500">
+                      <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-400'}`} />
+                      {isConnected ? '在线' : '离线'} · {agentCount} 个 Agent
                     </div>
                   </div>
                 </div>
@@ -383,7 +352,7 @@ export default function ObserverPage() {
       {viewMode === 'detail' && selectedAgent && (
         <div className="min-h-screen">
           {/* Header */}
-          <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 mc-grass-border-top shadow-sm">
+          <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b border-stone-200 shadow-sm">
             <div className="max-w-7xl mx-auto px-6 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -391,7 +360,7 @@ export default function ObserverPage() {
                     <ChevronLeft className="w-6 h-6 text-stone-600" />
                   </button>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-600 border-2 border-emerald-800 flex items-center justify-center pixel-border" style={{ imageRendering: 'pixelated' }}>
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
                       <Bot className="w-5 h-5 text-white" />
                     </div>
                     <div>

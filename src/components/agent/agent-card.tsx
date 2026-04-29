@@ -71,53 +71,50 @@ export function AgentCard({ agent, events, worldSnapshot, isSelected, onClick }:
 
   return (
     <div
-      className={`bg-card rounded-lg overflow-hidden transition-all cursor-pointer mc-stone-card ${
-        isSelected ? 'ring-2 ring-emerald-500' : ''
+      className={`bg-card border rounded-lg overflow-hidden transition-all cursor-pointer ${
+        isSelected ? 'ring-2 ring-primary' : ''
       }`}
       onClick={onClick}
     >
-      {/* Header - Minecraft grass top border */}
-      <div className="mc-grass-border-top">
-        <div className="p-4 border-b bg-muted/50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-10 h-10 bg-emerald-600 border-2 border-emerald-800 flex items-center justify-center pixel-border" style={{ imageRendering: 'pixelated' }}>
-                  <span className="text-lg font-bold text-white pixel-font">{agent.username[0]?.toUpperCase()}</span>
-                </div>
-                <div
-                  className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 border border-background ${
-                    agent.connected ? 'bg-green-500' : 'bg-red-500'
-                  }`}
-                  style={{ imageRendering: 'pixelated' }}
-                />
+      {/* Header */}
+      <div className="p-4 border-b bg-muted/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                <span className="text-lg font-bold text-white">{agent.username[0]?.toUpperCase()}</span>
               </div>
-              <div>
-                <h3 className="font-semibold pixel-font">{agent.username}</h3>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="w-3 h-3" />
-                  <span className="font-mono text-xs">
-                    {agent.position.x}, {agent.position.y}, {agent.position.z}
-                  </span>
-                </div>
+              <div
+                className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${
+                  agent.connected ? 'bg-green-500' : 'bg-red-500'
+                }`}
+              />
+            </div>
+            <div>
+              <h3 className="font-semibold">{agent.username}</h3>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="w-3 h-3" />
+                <span className="font-mono text-xs">
+                  {agent.position.x}, {agent.position.y}, {agent.position.z}
+                </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant="outline" className="capitalize gap-1 text-xs">
-                      {getGamemodeIcon()}
-                      {agent.gamemode}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent className="mc-tooltip">
-                    <p>游戏模式: {agent.gamemode}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <Badge variant="secondary" className="text-xs">{agent.world}</Badge>
-            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="capitalize gap-1 text-xs">
+                    {getGamemodeIcon()}
+                    {agent.gamemode}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>游戏模式: {agent.gamemode}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <Badge variant="secondary" className="text-xs">{agent.world}</Badge>
           </div>
         </div>
       </div>
@@ -129,7 +126,7 @@ export function AgentCard({ agent, events, worldSnapshot, isSelected, onClick }:
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-1">
               <Heart className="w-4 h-4 text-red-500" />
-              <span className="pixel-font text-xs">HP</span>
+              <span className="text-xs">生命值</span>
             </div>
             <span className="font-mono text-xs">
               {agent.health} / {agent.maxHealth}
@@ -153,7 +150,7 @@ export function AgentCard({ agent, events, worldSnapshot, isSelected, onClick }:
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-1">
               <Utensils className="w-4 h-4 text-orange-500" />
-              <span className="pixel-font text-xs">HUNGER</span>
+              <span className="text-xs">饥饿值</span>
             </div>
             <span className="font-mono text-xs">
               {agent.food} / 20

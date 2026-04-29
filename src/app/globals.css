@@ -417,6 +417,15 @@ body {
   animation: mc-block-float 3s ease-in-out infinite;
 }
 
+/* Subtle float for isometric blocks */
+.mc-block-float-1 {
+  animation: mc-block-float 4s ease-in-out infinite;
+}
+.mc-block-float-2 {
+  animation: mc-block-float 5s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
 /* Pixelated border for character parts */
 .pixel-border {
   image-rendering: pixelated;
