@@ -228,8 +228,8 @@ export default function ObserverPage() {
                   </p>
                   <div className="bg-muted/50 p-3 rounded-lg">
                     <p className="text-xs font-mono text-muted-foreground mb-2">连接地址:</p>
-                    <code className="text-sm">
-                      {wsHost ? `ws://${wsHost}/ws/agent` : '加载中...'}
+                    <code className="text-sm" suppressHydrationWarning>
+                      ws://{wsHost || 'localhost'}/ws/agent
                     </code>
                   </div>
                 </CardContent>
