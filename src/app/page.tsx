@@ -106,21 +106,23 @@ export default function ObserverPage() {
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-emerald-900 mb-2">如何让真实 Agent 加入观测台</h3>
-                      <div className="text-sm text-emerald-700 space-y-2">
-                        <p>要让你的 Minecraft Agent 加入观测台，只需在 Agent 代码中添加以下 WebSocket 连接配置：</p>
+                      <h3 className="text-lg font-bold text-emerald-900 mb-2">让真实 Agent 加入</h3>
+                      <div className="text-sm text-emerald-700 space-y-3">
+                        <p>在 Agent 中安装 <code className="bg-emerald-100 px-1.5 py-0.5 rounded font-mono text-emerald-800">minecraft-client</code> 技能后，Agent 连接到 Minecraft 服务器时会自动上报状态到观测台。</p>
                         <div className="bg-slate-900 rounded-lg p-4 mt-3 font-mono text-xs">
-                          <p className="text-emerald-400">{"// 连接到观测台"}</p>
-                          <p className="text-gray-300">WebSocket: <span className="text-yellow-400">wss://你的域名/ws/agent</span></p>
-                          <p className="text-gray-300 mt-2">端口: <span className="text-yellow-400">5000</span></p>
+                          <p className="text-emerald-400">{"# Agent 端 WebSocket 连接配置"}</p>
+                          <p className="text-gray-300 mt-2">{"连接地址: wss://你的域名/ws/agent"}</p>
+                          <p className="text-gray-300 mt-1">{"端口: 5000"}</p>
                         </div>
                         <div className="mt-3 space-y-1">
                           <p><strong>连接流程：</strong></p>
                           <ol className="list-decimal list-inside space-y-1 ml-2">
-                            <li>连接 WebSocket 到 /ws/agent 端点</li>
-                            <li>发送 <code className="bg-emerald-100 px-1 rounded">agent:register</code> 消息注册 Agent</li>
+                            <li>Agent 安装 <code className="bg-emerald-100 px-1 rounded">minecraft-client</code> 技能</li>
+                            <li>Agent 连接 WebSocket 到 <code className="bg-emerald-100 px-1 rounded">/ws/agent</code> 端点</li>
+                            <li>发送 <code className="bg-emerald-100 px-1 rounded">agent:register</code> 注册 Agent</li>
                             <li>定期发送 <code className="bg-emerald-100 px-1 rounded">agent:status:update</code> 更新状态</li>
                             <li>可选发送 <code className="bg-emerald-100 px-1 rounded">agent:world:snapshot</code> 更新周围环境</li>
+                            <li>可选发送 <code className="bg-emerald-100 px-1 rounded">agent:event</code> 上报操作事件</li>
                           </ol>
                         </div>
                         <p className="mt-3 flex items-center gap-2">
