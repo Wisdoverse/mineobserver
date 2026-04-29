@@ -4,22 +4,17 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: '新应用 | 扣子编程',
-    template: '%s | 扣子编程',
+    default: 'Minecraft Agent 观测台',
+    template: '%s | Minecraft Agent 观测台',
   },
-  description:
-    '扣子编程是一款一站式云端 Vibe Coding 开发平台。通过对话轻松构建智能体、工作流和网站，实现从创意到上线的无缝衔接。',
+  description: '实时监控 Minecraft Agent 的行为，包括位置、生命值、背包、周围环境等状态信息',
   keywords: [
-    '扣子编程',
-    'Coze Code',
-    'Vibe Coding',
-    'AI 编程',
-    '智能体搭建',
-    '工作流搭建',
-    '网站搭建',
-    '网站部署',
-    '全栈开发',
-    'AI 工程师',
+    'Minecraft',
+    'Agent',
+    '观测台',
+    '实时监控',
+    '游戏自动化',
+    'mineflayer',
   ],
   authors: [{ name: 'Coze Code Team', url: 'https://code.coze.cn' }],
   generator: 'Coze Code',
