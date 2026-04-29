@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -294,6 +294,13 @@ export function useDemoAgent() {
     } catch (error) {
       console.error('[Demo] Failed to start agent:', error);
     }
+  }, [connectWs]);
+
+  // 组件挂载时连接 WebSocket
+  useEffect(() => {
+    connectWs().catch(err => {
+      console.error('[Demo] Initial connection failed:', err);
+    });
   }, [connectWs]);
 
   // 停止单个演示 Agent
