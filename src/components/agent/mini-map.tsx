@@ -71,7 +71,8 @@ const BLOCK_COLORS: Record<string, string> = {
   default: '#888888',
 };
 
-function getBlockColor(blockType: string): string {
+function getBlockColor(blockType: string | undefined): string {
+  if (!blockType) return BLOCK_COLORS.default;
   const normalized = blockType.toLowerCase().replace(/minecraft:/, '');
   return BLOCK_COLORS[normalized] || BLOCK_COLORS.default;
 }
@@ -90,7 +91,8 @@ const ENTITY_ICONS: Record<string, string> = {
   default: '❓',
 };
 
-function getEntityIcon(entityType: string): string {
+function getEntityIcon(entityType: string | undefined): string {
+  if (!entityType) return ENTITY_ICONS.default;
   const normalized = entityType.toLowerCase().replace(/minecraft:/, '');
   return ENTITY_ICONS[normalized] || ENTITY_ICONS.default;
 }

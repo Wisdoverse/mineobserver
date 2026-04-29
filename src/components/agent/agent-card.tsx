@@ -95,7 +95,7 @@ export function AgentCard({ agent, events, worldSnapshot, isSelected, onClick }:
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="w-3 h-3" />
                 <span className="font-mono text-xs">
-                  {agent.position.x}, {agent.position.y}, {agent.position.z}
+                  {agent.position ? `${agent.position.x}, ${agent.position.y}, ${agent.position.z}` : '未知'}
                 </span>
               </div>
             </div>
@@ -106,15 +106,15 @@ export function AgentCard({ agent, events, worldSnapshot, isSelected, onClick }:
                 <TooltipTrigger asChild>
                   <Badge variant="outline" className="capitalize gap-1 text-xs">
                     {getGamemodeIcon()}
-                    {agent.gamemode}
+                    {agent.gamemode || 'unknown'}
                   </Badge>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>游戏模式: {agent.gamemode}</p>
+                  <p>游戏模式: {agent.gamemode || '未知'}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <Badge variant="secondary" className="text-xs">{agent.world}</Badge>
+            <Badge variant="secondary" className="text-xs">{agent.world || '未知'}</Badge>
           </div>
         </div>
       </div>
@@ -220,9 +220,9 @@ export function AgentCard({ agent, events, worldSnapshot, isSelected, onClick }:
 
         <TabsContent value="map" className="p-4">
           <MiniMap
-            playerX={agent.position.x}
-            playerY={agent.position.y}
-            playerZ={agent.position.z}
+            playerX={agent.position?.x || 0}
+            playerY={agent.position?.y || 0}
+            playerZ={agent.position?.z || 0}
             yaw={agent.yaw || 0}
             blocks={(worldSnapshot?.blocks || []).map((b: { position: { x: number; y: number; z: number }; type: string }) => ({ position: { x: b.position.x, y: b.position.y, z: b.position.z }, type: b.type }))}
             entities={(worldSnapshot?.entities || []).map((e: { id?: string; name?: string; type: string; position: { x: number; y: number; z: number } }) => ({ id: e.id || e.name || String(Math.random()), type: e.type, position: e.position }))}

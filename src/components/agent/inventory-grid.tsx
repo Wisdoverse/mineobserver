@@ -90,7 +90,8 @@ const SLOT_ICONS: Record<string, string> = {
   default: '📦',
 };
 
-function getItemIcon(itemName: string): string {
+function getItemIcon(itemName: string | undefined): string {
+  if (!itemName) return SLOT_ICONS.default;
   const normalized = itemName.toLowerCase().replace(/minecraft:/, '');
   return SLOT_ICONS[normalized] || SLOT_ICONS.default;
 }
