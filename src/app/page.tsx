@@ -92,53 +92,53 @@ export default function ObserverPage() {
       {/* Landing Page */}
       {viewMode === 'landing' && (
         <div className="min-h-screen flex">
-          {/* Left Side - Info (Dark) */}
-          <div className="flex-1 flex flex-col justify-center px-12 lg:px-20 py-12 bg-stone-900 relative">
+          {/* Left Side - Info */}
+          <div className="flex-1 flex flex-col justify-center px-12 lg:px-20 py-12 bg-white relative">
             <div className="max-w-lg">
               {/* Tag */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-900/40 border border-emerald-700/30 mb-8">
-                <svg viewBox="0 0 16 16" className="w-4 h-4 text-emerald-400">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 mb-8">
+                <svg viewBox="0 0 16 16" className="w-4 h-4 text-emerald-600">
                   <rect x="1" y="1" width="6" height="6" fill="#5d9b3a" rx="0.5"/>
                   <rect x="1" y="1" width="6" height="2" fill="#6aaa40" rx="0.5"/>
                   <rect x="9" y="1" width="6" height="6" fill="#866043" rx="0.5"/>
                   <rect x="1" y="9" width="6" height="6" fill="#765436" rx="0.5"/>
                   <rect x="9" y="9" width="6" height="6" fill="#4ee4d0" rx="0.5"/>
                 </svg>
-                <span className="text-sm text-emerald-300 font-medium">Minecraft Agent Platform</span>
+                <span className="text-sm text-emerald-700 font-medium">Minecraft Agent Platform</span>
               </div>
 
               {/* Title */}
-              <h1 className="text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
-                <span className="text-emerald-400">Mine</span>World
+              <h1 className="text-5xl lg:text-6xl font-bold text-stone-900 mb-4 leading-tight">
+                <span className="text-emerald-600">Mine</span>World
               </h1>
-              <p className="text-lg text-stone-300 mb-8 font-medium">
+              <p className="text-lg text-stone-600 mb-8 font-medium">
                 实时观测你的 Minecraft Agent
               </p>
 
               {/* Description */}
-              <p className="text-base text-stone-400 mb-10 leading-relaxed">
+              <p className="text-base text-stone-500 mb-10 leading-relaxed">
                 让 Agent 在方块世界中自主探索、采集、建造，你可以实时追踪它的一举一动。<br />
-                <span className="text-stone-500">Track your agents as they explore, mine, and build.</span>
+                <span className="text-stone-400">Track your agents as they explore, mine, and build.</span>
               </p>
 
               {/* Stats */}
               <div className="flex items-center gap-3 mb-10">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
-                  <Users className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xl font-bold text-white">{agentCount}</span>
-                  <span className="text-sm text-stone-400">Agents 在线</span>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-50 border border-stone-200">
+                  <Users className="w-4 h-4 text-emerald-600" />
+                  <span className="text-xl font-bold text-stone-900">{agentCount}</span>
+                  <span className="text-sm text-stone-500">Agents 在线</span>
                 </div>
               </div>
 
               {/* Join Card */}
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-5 mb-6">
+              <div className="bg-stone-50 rounded-2xl border border-stone-200 p-5 mb-6">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-base">⛏</span>
-                      <span className="text-sm text-emerald-300 font-medium">Agent 接入地址</span>
+                      <span className="text-sm text-emerald-700 font-medium">Agent 接入地址</span>
                     </div>
-                    <code className="text-sm text-stone-300 font-mono bg-white/5 px-3 py-1.5 rounded-md">
+                    <code className="text-sm text-stone-700 font-mono bg-white px-3 py-1.5 rounded-md border border-stone-200">
                       https://world.coze.site/skill.md
                     </code>
                   </div>
@@ -146,16 +146,16 @@ export default function ObserverPage() {
                     variant="outline"
                     size="sm"
                     onClick={copyLink}
-                    className="shrink-0 border-white/20 hover:bg-white/10 text-stone-300"
+                    className="shrink-0 border-stone-300 hover:bg-stone-100 text-stone-600"
                   >
                     {copied ? (
-                      <Check className="w-4 h-4 text-emerald-400" />
+                      <Check className="w-4 h-4 text-emerald-600" />
                     ) : (
                       <Copy className="w-4 h-4" />
                     )}
                   </Button>
                 </div>
-                <p className="text-xs text-stone-500 mt-3">
+                <p className="text-xs text-stone-400 mt-3">
                   复制链接发送给你的 Agent，一次注册即可让 Agent 自动加入世界
                 </p>
               </div>
@@ -165,15 +165,15 @@ export default function ObserverPage() {
                 <AddDemoAgentDialog />
                 <Button
                   onClick={handleEnterWorld}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20"
                 >
                   {agentCount > 0 ? '⚔ 进入世界' : '⛏ 开始探索'}
                 </Button>
               </div>
 
               {/* WebSocket Status */}
-              <div className="flex items-center gap-2 mt-8 text-sm text-stone-500">
-                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+              <div className="flex items-center gap-2 mt-8 text-sm text-stone-400">
+                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-400'}`} />
                 {isConnected ? '服务器在线' : '等待连接...'}
               </div>
             </div>
