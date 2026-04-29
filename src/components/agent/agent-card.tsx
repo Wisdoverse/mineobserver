@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Heart, Utensils, Compass, MapPin, Eye, Sun, Moon } from 'lucide-react';
 import type { AgentStatus } from '@/lib/types/agent';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Tooltip,
@@ -49,9 +48,6 @@ const EVENT_TYPE_CONFIG: Record<string, { color: string; label: string }> = {
 export function AgentCard({ agent, events, worldSnapshot, isSelected, onClick }: AgentCardProps) {
   const [activeTab, setActiveTab] = useState<string>('status');
 
-  const healthPercent = (agent.health / agent.maxHealth) * 100;
-  const foodPercent = (agent.food / 20) * 100;
-
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString('zh-CN', {
       hour: '2-digit',
@@ -75,82 +71,103 @@ export function AgentCard({ agent, events, worldSnapshot, isSelected, onClick }:
 
   return (
     <div
-      className={`bg-card border rounded-lg overflow-hidden transition-all cursor-pointer ${
-        isSelected ? 'ring-2 ring-primary' : ''
+      className={`bg-card rounded-lg overflow-hidden transition-all cursor-pointer mc-stone-card ${
+        isSelected ? 'ring-2 ring-emerald-500' : ''
       }`}
       onClick={onClick}
     >
-      {/* Header */}
-      <div className="p-4 border-b bg-muted/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="text-lg font-bold">{agent.username[0]?.toUpperCase()}</span>
+      {/* Header - Minecraft grass top border */}
+      <div className="mc-grass-border-top">
+        <div className="p-4 border-b bg-muted/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="w-10 h-10 bg-emerald-600 border-2 border-emerald-800 flex items-center justify-center pixel-border" style={{ imageRendering: 'pixelated' }}>
+                  <span className="text-lg font-bold text-white pixel-font">{agent.username[0]?.toUpperCase()}</span>
+                </div>
+                <div
+                  className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 border border-background ${
+                    agent.connected ? 'bg-green-500' : 'bg-red-500'
+                  }`}
+                  style={{ imageRendering: 'pixelated' }}
+                />
               </div>
-              <div
-                className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-background ${
-                  agent.connected ? 'bg-green-500' : 'bg-red-500'
-                }`}
-              />
-            </div>
-            <div>
-              <h3 className="font-semibold">{agent.username}</h3>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="w-3 h-3" />
-                <span>
-                  {agent.position.x}, {agent.position.y}, {agent.position.z}
-                </span>
+              <div>
+                <h3 className="font-semibold pixel-font">{agent.username}</h3>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MapPin className="w-3 h-3" />
+                  <span className="font-mono text-xs">
+                    {agent.position.x}, {agent.position.y}, {agent.position.z}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge variant="outline" className="capitalize gap-1">
-                    {getGamemodeIcon()}
-                    {agent.gamemode}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>游戏模式: {agent.gamemode}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <Badge variant="secondary">{agent.world}</Badge>
+            <div className="flex items-center gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="capitalize gap-1 text-xs">
+                      {getGamemodeIcon()}
+                      {agent.gamemode}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent className="mc-tooltip">
+                    <p>游戏模式: {agent.gamemode}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <Badge variant="secondary" className="text-xs">{agent.world}</Badge>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Status Bars */}
       <div className="p-4 space-y-3">
-        {/* Health */}
+        {/* Health - Minecraft heart style */}
         <div className="space-y-1">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-1">
               <Heart className="w-4 h-4 text-red-500" />
-              <span>生命值</span>
+              <span className="pixel-font text-xs">HP</span>
             </div>
-            <span className="font-mono">
+            <span className="font-mono text-xs">
               {agent.health} / {agent.maxHealth}
             </span>
           </div>
-          <Progress value={healthPercent} className="h-2" />
+          <div className="mc-health-bar">
+            {Array.from({ length: 10 }).map((_, i) => {
+              const heartValue = (i + 1) * (agent.maxHealth / 10);
+              if (agent.health >= heartValue) {
+                return <span key={i} className="mc-heart mc-heart-full">❤</span>;
+              } else if (agent.health >= heartValue - agent.maxHealth / 10) {
+                return <span key={i} className="mc-heart mc-heart-half">❤</span>;
+              }
+              return <span key={i} className="mc-heart mc-heart-empty">❤</span>;
+            })}
+          </div>
         </div>
 
-        {/* Food */}
+        {/* Food - Minecraft drumstick style */}
         <div className="space-y-1">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-1">
               <Utensils className="w-4 h-4 text-orange-500" />
-              <span>饥饿值</span>
+              <span className="pixel-font text-xs">HUNGER</span>
             </div>
-            <span className="font-mono">
+            <span className="font-mono text-xs">
               {agent.food} / 20
             </span>
           </div>
-          <Progress value={foodPercent} className="h-2" />
+          <div className="mc-hunger-bar">
+            {Array.from({ length: 10 }).map((_, i) => {
+              const drumstickValue = (i + 1) * 2;
+              if (agent.food >= drumstickValue) {
+                return <span key={i} className="mc-drumstick mc-drumstick-full">🍖</span>;
+              }
+              return <span key={i} className="mc-drumstick mc-drumstick-empty">🍖</span>;
+            })}
+          </div>
         </div>
 
         {/* Status Flags */}
