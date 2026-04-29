@@ -179,101 +179,76 @@ export default function ObserverPage() {
             </div>
           </div>
 
-          {/* Right Side - Minecraft World Visual */}
-          <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden bg-gradient-to-b from-sky-200 via-sky-100 to-emerald-100">
-            {/* Sky clouds - subtle decorative */}
-            <div className="absolute top-[12%] left-[10%] w-24 h-8 bg-white/40 rounded-full blur-sm" />
-            <div className="absolute top-[18%] left-[12%] w-16 h-6 bg-white/30 rounded-full blur-sm" />
-            <div className="absolute top-[8%] right-[15%] w-28 h-10 bg-white/35 rounded-full blur-sm" />
-            <div className="absolute top-[14%] right-[18%] w-20 h-7 bg-white/25 rounded-full blur-sm" />
+          {/* Right Side - Globe Visual */}
+          <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden bg-stone-50">
+            {/* Subtle grid background */}
+            <div className="absolute inset-0 opacity-[0.04]" style={{
+              backgroundImage: 'linear-gradient(#57534e 1px, transparent 1px), linear-gradient(90deg, #57534e 1px, transparent 1px)',
+              backgroundSize: '40px 40px',
+            }} />
 
-            {/* Sun */}
-            <div className="absolute top-[6%] right-[8%] w-14 h-14 bg-yellow-200/60 rounded-full blur-md" />
-
-            {/* Ground layers - soft pixelated terrain */}
-            <div className="absolute bottom-0 left-0 right-0">
-              {/* Grass top */}
-              <div className="h-6 bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-500" style={{ imageRendering: 'pixelated' }} />
-              {/* Dirt */}
-              <div className="h-12 bg-gradient-to-b from-amber-700 to-amber-800" style={{ imageRendering: 'pixelated' }} />
-              {/* Stone */}
-              <div className="h-14 bg-gradient-to-b from-stone-500 to-stone-700" style={{ imageRendering: 'pixelated' }} />
-            </div>
-
-            {/* Small tree on ground */}
-            <div className="absolute bottom-32 left-[15%]">
-              <svg viewBox="0 0 60 80" className="w-12 h-16 opacity-80">
-                {/* Leaves */}
-                <rect x="10" y="0" width="40" height="16" fill="#3d8a2e" rx="2"/>
-                <rect x="5" y="12" width="50" height="16" fill="#2d7a1e" rx="2"/>
-                <rect x="10" y="24" width="40" height="14" fill="#3d8a2e" rx="2"/>
-                {/* Trunk */}
-                <rect x="22" y="36" width="16" height="24" fill="#9c7c4c" rx="1"/>
+            {/* Main globe */}
+            <div className="relative w-64 h-64">
+              {/* Globe sphere - gradient circle */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-100 via-emerald-50 to-stone-100 shadow-xl" />
+              {/* Globe grid lines - horizontal */}
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 260 260">
+                {/* Horizontal grid lines */}
+                <ellipse cx="130" cy="60" rx="110" ry="30" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.25" />
+                <ellipse cx="130" cy="100" rx="125" ry="40" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.25" />
+                <ellipse cx="130" cy="130" rx="130" ry="45" fill="none" stroke="#5d9b3a" strokeWidth="0.6" opacity="0.3" />
+                <ellipse cx="130" cy="160" rx="125" ry="40" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.25" />
+                <ellipse cx="130" cy="200" rx="110" ry="30" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.25" />
+                {/* Vertical grid lines */}
+                <ellipse cx="130" cy="130" rx="30" ry="128" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.25" />
+                <ellipse cx="130" cy="130" rx="60" ry="128" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.25" />
+                <ellipse cx="130" cy="130" rx="90" ry="128" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.25" />
+                <ellipse cx="130" cy="130" rx="120" ry="128" fill="none" stroke="#5d9b3a" strokeWidth="0.5" opacity="0.2" />
+                {/* Outer circle */}
+                <circle cx="130" cy="130" r="128" fill="none" stroke="#5d9b3a" strokeWidth="1" opacity="0.3" />
               </svg>
-            </div>
 
-            {/* Small tree on ground - right */}
-            <div className="absolute bottom-32 right-[12%]">
-              <svg viewBox="0 0 60 80" className="w-10 h-14 opacity-60">
-                <rect x="10" y="0" width="40" height="16" fill="#3d8a2e" rx="2"/>
-                <rect x="5" y="12" width="50" height="16" fill="#2d7a1e" rx="2"/>
-                <rect x="10" y="24" width="40" height="14" fill="#3d8a2e" rx="2"/>
-                <rect x="22" y="36" width="16" height="24" fill="#9c7c4c" rx="1"/>
-              </svg>
-            </div>
-
-            {/* Center content */}
-            <div className="relative z-10 flex flex-col items-center mb-24">
-              {/* Isometric-style block illustration */}
-              <div className="relative w-48 h-48 mb-6">
-                {/* Grass block - isometric */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <svg viewBox="0 0 120 120" className="w-full h-full drop-shadow-lg">
-                    {/* Top face - grass */}
-                    <polygon points="60,10 110,35 60,60 10,35" fill="#5d9b3a" />
-                    <polygon points="60,10 110,35 60,22 10,35" fill="#6aaa40" />
-                    {/* Left face - dirt */}
-                    <polygon points="10,35 60,60 60,100 10,75" fill="#866043" />
-                    <polygon points="10,35 60,48 60,60 10,48" fill="#5d9b3a" />
-                    {/* Right face - dirt dark */}
-                    <polygon points="110,35 60,60 60,100 110,75" fill="#765436" />
-                    <polygon points="110,35 60,48 60,60 110,48" fill="#4a8c2a" />
-                  </svg>
-                </div>
-
-                {/* Small floating diamond block */}
-                <div className="absolute -top-4 -right-2">
-                  <svg viewBox="0 0 40 40" className="w-10 h-10 mc-block-float-1">
-                    <polygon points="20,2 38,12 20,22 2,12" fill="#4ee4d0" />
-                    <polygon points="2,12 20,22 20,38 2,28" fill="#2dc2b0" />
-                    <polygon points="38,12 20,22 20,38 38,28" fill="#1fa08e" />
-                  </svg>
-                </div>
-
-                {/* Small floating stone block */}
-                <div className="absolute -bottom-2 -left-4">
-                  <svg viewBox="0 0 40 40" className="w-8 h-8 mc-block-float-2">
-                    <polygon points="20,2 38,12 20,22 2,12" fill="#9a9a9a" />
-                    <polygon points="2,12 20,22 20,38 2,28" fill="#7a7a7a" />
-                    <polygon points="38,12 20,22 20,38 38,28" fill="#6a6a6a" />
-                  </svg>
-                </div>
-
-                {/* Small floating wood block */}
-                <div className="absolute top-2 -left-6">
-                  <svg viewBox="0 0 40 40" className="w-7 h-7 mc-block-float-3">
-                    <polygon points="20,2 38,12 20,22 2,12" fill="#a88c5c" />
-                    <polygon points="2,12 20,22 20,38 2,28" fill="#8c6c3c" />
-                    <polygon points="38,12 20,22 20,38 38,28" fill="#765436" />
-                  </svg>
-                </div>
+              {/* Floating block avatars around the globe */}
+              {/* Top-left - grass block */}
+              <div className="absolute -top-6 left-4 w-10 h-10 rounded-lg bg-gradient-to-b from-emerald-400 to-emerald-500 shadow-md flex items-center justify-center border border-emerald-300/50" title="Grass Block">
+                <span className="text-white text-xs font-bold">⛏</span>
               </div>
 
-              {/* Tagline */}
-              <p className="text-xl font-semibold text-emerald-800/80">
+              {/* Top-right - diamond block */}
+              <div className="absolute -top-4 right-2 w-9 h-9 rounded-lg bg-gradient-to-b from-cyan-300 to-cyan-400 shadow-md flex items-center justify-center border border-cyan-200/50" title="Diamond Block">
+                <span className="text-white text-xs">💎</span>
+              </div>
+
+              {/* Left - stone block */}
+              <div className="absolute top-1/2 -left-8 -translate-y-1/2 w-8 h-8 rounded-lg bg-gradient-to-b from-stone-300 to-stone-400 shadow-md flex items-center justify-center border border-stone-200/50" title="Stone Block">
+                <span className="text-stone-600 text-xs">🪨</span>
+              </div>
+
+              {/* Right - wood block */}
+              <div className="absolute top-1/2 -right-7 -translate-y-1/2 w-9 h-9 rounded-lg bg-gradient-to-b from-amber-300 to-amber-400 shadow-md flex items-center justify-center border border-amber-200/50" title="Wood Block">
+                <span className="text-amber-800 text-xs">🪵</span>
+              </div>
+
+              {/* Bottom-left - redstone */}
+              <div className="absolute -bottom-5 left-8 w-8 h-8 rounded-lg bg-gradient-to-b from-red-300 to-red-400 shadow-md flex items-center justify-center border border-red-200/50" title="Redstone">
+                <span className="text-white text-xs">🔴</span>
+              </div>
+
+              {/* Bottom-right - gold block */}
+              <div className="absolute -bottom-4 right-6 w-9 h-9 rounded-lg bg-gradient-to-b from-yellow-300 to-yellow-400 shadow-md flex items-center justify-center border border-yellow-200/50" title="Gold Block">
+                <span className="text-yellow-800 text-xs">🥇</span>
+              </div>
+
+              {/* Center glow */}
+              <div className="absolute inset-8 rounded-full bg-emerald-200/20 blur-xl" />
+            </div>
+
+            {/* Tagline below globe */}
+            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 text-center">
+              <p className="text-sm font-medium text-stone-500">
                 ⛏ Explore the Block World
               </p>
-              <p className="text-sm text-emerald-700/60 mt-1">
+              <p className="text-xs text-stone-400 mt-1">
                 Your agents are waiting...
               </p>
             </div>
