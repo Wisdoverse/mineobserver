@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Activity, Users, Wifi, WifiOff, RefreshCw, Server } from 'lucide-react';
+import { Activity, Users, Wifi, WifiOff, RefreshCw, Server, Pause, Trash2, Bot } from 'lucide-react';
 import { useAgentObserver } from '@/hooks/use-agent-observer';
+import { useDemoAgent, DemoAgentDialog } from '@/hooks/use-demo-agent';
 import { AgentCard } from '@/components/agent';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,9 +14,21 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export default function ObserverPage() {
   const { agents, events, worldSnapshots, isConnected, lastUpdate } = useAgentObserver();
+  const { activeAgents, startDemoAgent, stopDemoAgent, stopAllDemoAgents } = useDemoAgent();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState<number>(0);
 
@@ -30,9 +43,16 @@ export default function ObserverPage() {
   const agentsList = Array.from(agents.values());
   const selectedAgent = selectedAgentId ? agents.get(selectedAgentId) : null;
   const selectedEvents = selectedAgentId ? events.get(selectedAgentId) || [] : [];
-  const selectedSnapshot = selectedAgentId ? worldSnapshots.get(selectedAgentId) : undefined;
+  const demoAgentCount = activeAgents.size;
 
   const timeSinceUpdate = Math.round((currentTime - lastUpdate) / 1000);
+
+  // 自动选择第一个 Agent
+  useEffect(() => {
+    if (agentsList.length > 0 && !selectedAgentId) {
+      setSelectedAgentId(agentsList[0].id);
+    }
+  }, [agentsList, selectedAgentId]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,18 +102,62 @@ export default function ObserverPage() {
                 <Users className="w-4 h-4 text-muted-foreground" />
                 <span className="font-mono">{agentsList.length}</span>
                 <span className="text-muted-foreground">个 Agent</span>
+                {demoAgentCount > 0 && (
+                  <Badge variant="secondary" className="ml-1">
+                    <Bot className="w-3 h-3 mr-1" />
+                    {demoAgentCount} 演示
+                  </Badge>
+                )}
+              </div>
+
+              {/* 演示 Agent 控制 */}
+              <div className="flex items-center gap-2">
+                <DemoAgentDialog onStartDemo={startDemoAgent} />
+
+                {demoAgentCount > 0 && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="icon" className="text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>停止所有演示 Agent</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                这将断开所有正在运行的演示 Agent 连接。
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>取消</AlertDialogCancel>
+                              <AlertDialogAction onClick={stopAllDemoAgents}>
+                                确认停止
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>停止所有演示 Agent</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
 
               {/* 刷新按钮 */}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon">
-                      <RefreshCw className={`w-4 h-4 ${!isConnected ? 'animate-spin' : ''}`} />
+                    <Button variant="outline" size="icon" onClick={() => window.location.reload()}>
+                      <RefreshCw className={`w-4 h-4`} />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>刷新连接</p>
+                    <p>刷新页面</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -110,19 +174,64 @@ export default function ObserverPage() {
               <Server className="w-12 h-12 text-muted-foreground" />
             </div>
             <h2 className="text-2xl font-bold mb-2">暂无活跃的 Agent</h2>
-            <p className="text-muted-foreground text-center max-w-md">
+            <p className="text-muted-foreground text-center max-w-md mb-6">
               当有 Minecraft Agent 连接时，它们会显示在这里。
               <br />
-              Agent 需要安装专门的客户端来连接到此观测台。
+              你可以添加演示 Agent 来预览观测台功能。
             </p>
-            <div className="mt-8 p-4 bg-muted/50 rounded-lg max-w-lg">
-              <h3 className="font-semibold mb-2">快速开始</h3>
-              <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-                <li>在 Agent 环境中安装 minecraft-client 技能</li>
-                <li>配置观测台地址为当前页面 URL</li>
-                <li>启动 Agent 连接 Minecraft 服务器</li>
-                <li>观察 Agent 的实时行为</li>
-              </ol>
+
+            <div className="flex gap-3 mb-8">
+              <DemoAgentDialog onStartDemo={startDemoAgent} />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bot className="w-5 h-5" />
+                    演示模式
+                  </CardTitle>
+                  <CardDescription>
+                    使用模拟数据预览观测台功能
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    点击"添加演示 Agent"按钮，可以创建一个模拟的 Minecraft Agent，
+                    自动发送位置更新、事件日志和周围环境信息。
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>模拟移动和视角变化</li>
+                    <li>随机生成事件日志</li>
+                    <li>展示背包和装备</li>
+                    <li>小地图方块和实体显示</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="w-5 h-5" />
+                    真实 Agent 集成
+                  </CardTitle>
+                  <CardDescription>
+                    连接真实的 Minecraft Agent
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Agent 需要通过 WebSocket 连接到此观测台并上报状态。
+                    查看 AGENTS.md 文档了解集成方式。
+                  </p>
+                  <div className="bg-muted/50 p-3 rounded-lg">
+                    <p className="text-xs font-mono text-muted-foreground mb-2">连接地址:</p>
+                    <code className="text-sm">
+                      ws://{typeof window !== 'undefined' ? window.location.host : 'localhost'}/ws/agent
+                    </code>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         ) : (
@@ -135,14 +244,39 @@ export default function ObserverPage() {
               </div>
               <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
                 {agentsList.map((agent) => (
-                  <AgentCard
-                    key={agent.id}
-                    agent={agent}
-                    events={events.get(agent.id) || []}
-                    worldSnapshot={worldSnapshots.get(agent.id)}
-                    isSelected={selectedAgentId === agent.id}
-                    onClick={() => setSelectedAgentId(agent.id)}
-                  />
+                  <div key={agent.id} className="relative">
+                    <AgentCard
+                      agent={agent}
+                      events={events.get(agent.id) || []}
+                      worldSnapshot={worldSnapshots.get(agent.id)}
+                      isSelected={selectedAgentId === agent.id}
+                      onClick={() => setSelectedAgentId(agent.id)}
+                    />
+                    {agent.id.startsWith('demo-') && (
+                      <div className="absolute top-2 right-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  stopDemoAgent(agent.id);
+                                }}
+                              >
+                                <Pause className="w-3 h-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>停止演示</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -153,7 +287,15 @@ export default function ObserverPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold">{selectedAgent.username}</h2>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-semibold">{selectedAgent.username}</h2>
+                        {selectedAgent.id.startsWith('demo-') && (
+                          <Badge variant="outline" className="text-xs">
+                            <Bot className="w-3 h-3 mr-1" />
+                            演示
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground">
                         Agent ID: {selectedAgent.id}
                       </p>
