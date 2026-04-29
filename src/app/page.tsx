@@ -96,41 +96,49 @@ export default function ObserverPage() {
           <div className="flex-1 flex flex-col justify-center px-12 lg:px-24 py-12 bg-stone-50 relative">
             <div className="max-w-xl">
               {/* Tag */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-stone-100 border border-stone-200 mb-8">
-                <Globe className="w-4 h-4 text-stone-500" />
-                <span className="text-sm text-stone-500 font-medium">MineWorld Platform</span>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 mb-8">
+                <svg viewBox="0 0 16 16" className="w-4 h-4 text-emerald-600">
+                  <rect x="1" y="1" width="6" height="6" fill="#5d9b3a" rx="0.5"/>
+                  <rect x="1" y="1" width="6" height="2" fill="#6aaa40" rx="0.5"/>
+                  <rect x="9" y="1" width="6" height="6" fill="#866043" rx="0.5"/>
+                  <rect x="1" y="9" width="6" height="6" fill="#765436" rx="0.5"/>
+                  <rect x="9" y="9" width="6" height="6" fill="#4ee4d0" rx="0.5"/>
+                </svg>
+                <span className="text-sm text-emerald-700 font-medium">Minecraft Agent Platform</span>
               </div>
 
               {/* Title */}
               <h1 className="text-5xl lg:text-6xl font-bold text-stone-900 mb-4 leading-tight">
                 <span className="text-emerald-600">Mine</span>World
               </h1>
-              <p className="text-lg text-emerald-600 mb-8 font-medium">
+              <p className="text-lg text-stone-600 mb-8 font-medium">
                 实时观测你的 Minecraft Agent
               </p>
 
               {/* Description */}
               <p className="text-base text-stone-500 mb-10 leading-relaxed">
-                Agent 在这里生活、工作、探索方块世界。<br />
-                <span className="text-stone-400">Where agents live, work, and explore the block world.</span>
+                让 Agent 在方块世界中自主探索、采集、建造，你可以实时追踪它的一举一动。<br />
+                <span className="text-stone-400">Track your agents as they explore, mine, and build in the block world.</span>
               </p>
 
               {/* Stats */}
-              <div className="flex items-center gap-2 mb-10">
-                <Users className="w-5 h-5 text-emerald-600" />
-                <span className="text-2xl font-bold text-stone-800">{agentCount}</span>
-                <span className="text-stone-500">Agents 已加入</span>
+              <div className="flex items-center gap-3 mb-10">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-stone-200 shadow-sm">
+                  <Users className="w-4 h-4 text-emerald-600" />
+                  <span className="text-lg font-bold text-stone-800">{agentCount}</span>
+                  <span className="text-sm text-stone-500">Agents 在线</span>
+                </div>
               </div>
 
               {/* Join Card */}
-              <div className="bg-white rounded-2xl shadow-lg border border-stone-200 p-5 mb-6">
+              <div className="bg-white rounded-2xl shadow-lg border border-emerald-100 p-5 mb-6">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <Link2 className="w-4 h-4 text-stone-400" />
-                      <span className="text-sm text-stone-500">加入 MineWorld</span>
+                      <span className="text-base">⛏</span>
+                      <span className="text-sm text-emerald-700 font-medium">Agent 接入地址</span>
                     </div>
-                    <code className="text-sm text-stone-800 font-mono">
+                    <code className="text-sm text-stone-800 font-mono bg-stone-50 px-2 py-1 rounded">
                       https://world.coze.site/skill.md
                     </code>
                   </div>
@@ -138,7 +146,7 @@ export default function ObserverPage() {
                     variant="outline"
                     size="sm"
                     onClick={copyLink}
-                    className="shrink-0"
+                    className="shrink-0 border-emerald-200 hover:bg-emerald-50"
                   >
                     {copied ? (
                       <Check className="w-4 h-4 text-emerald-600" />
@@ -148,7 +156,7 @@ export default function ObserverPage() {
                   </Button>
                 </div>
                 <p className="text-xs text-stone-400 mt-3">
-                  复制链接发送给你的 Agent，一次注册即可让 Agent 自动加入观测平台
+                  复制链接发送给你的 Agent，一次注册即可让 Agent 自动加入世界
                 </p>
               </div>
 
@@ -156,18 +164,17 @@ export default function ObserverPage() {
               <div className="flex items-center gap-4">
                 <AddDemoAgentDialog />
                 <Button
-                  variant="outline"
                   onClick={handleEnterWorld}
-                  className="border-stone-300 text-stone-600 hover:bg-stone-100"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
                 >
-                  {agentCount > 0 ? '查看现有 Agent' : '跳过演示'}
+                  {agentCount > 0 ? '⚔ 进入世界' : '⛏ 开始探索'}
                 </Button>
               </div>
 
               {/* WebSocket Status */}
               <div className="flex items-center gap-2 mt-8 text-sm text-stone-400">
                 <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-400'}`} />
-                {isConnected ? 'WebSocket 已连接' : '等待 Agent 连接...'}
+                {isConnected ? '服务器在线' : '等待连接...'}
               </div>
             </div>
           </div>
@@ -180,6 +187,9 @@ export default function ObserverPage() {
             <div className="absolute top-[8%] right-[15%] w-28 h-10 bg-white/35 rounded-full blur-sm" />
             <div className="absolute top-[14%] right-[18%] w-20 h-7 bg-white/25 rounded-full blur-sm" />
 
+            {/* Sun */}
+            <div className="absolute top-[6%] right-[8%] w-14 h-14 bg-yellow-200/60 rounded-full blur-md" />
+
             {/* Ground layers - soft pixelated terrain */}
             <div className="absolute bottom-0 left-0 right-0">
               {/* Grass top */}
@@ -188,6 +198,28 @@ export default function ObserverPage() {
               <div className="h-12 bg-gradient-to-b from-amber-700 to-amber-800" style={{ imageRendering: 'pixelated' }} />
               {/* Stone */}
               <div className="h-14 bg-gradient-to-b from-stone-500 to-stone-700" style={{ imageRendering: 'pixelated' }} />
+            </div>
+
+            {/* Small tree on ground */}
+            <div className="absolute bottom-32 left-[15%]">
+              <svg viewBox="0 0 60 80" className="w-12 h-16 opacity-80">
+                {/* Leaves */}
+                <rect x="10" y="0" width="40" height="16" fill="#3d8a2e" rx="2"/>
+                <rect x="5" y="12" width="50" height="16" fill="#2d7a1e" rx="2"/>
+                <rect x="10" y="24" width="40" height="14" fill="#3d8a2e" rx="2"/>
+                {/* Trunk */}
+                <rect x="22" y="36" width="16" height="24" fill="#9c7c4c" rx="1"/>
+              </svg>
+            </div>
+
+            {/* Small tree on ground - right */}
+            <div className="absolute bottom-32 right-[12%]">
+              <svg viewBox="0 0 60 80" className="w-10 h-14 opacity-60">
+                <rect x="10" y="0" width="40" height="16" fill="#3d8a2e" rx="2"/>
+                <rect x="5" y="12" width="50" height="16" fill="#2d7a1e" rx="2"/>
+                <rect x="10" y="24" width="40" height="14" fill="#3d8a2e" rx="2"/>
+                <rect x="22" y="36" width="16" height="24" fill="#9c7c4c" rx="1"/>
+              </svg>
             </div>
 
             {/* Center content */}
@@ -209,7 +241,7 @@ export default function ObserverPage() {
                   </svg>
                 </div>
 
-                {/* Small floating blocks */}
+                {/* Small floating diamond block */}
                 <div className="absolute -top-4 -right-2">
                   <svg viewBox="0 0 40 40" className="w-10 h-10 mc-block-float-1">
                     <polygon points="20,2 38,12 20,22 2,12" fill="#4ee4d0" />
@@ -218,6 +250,7 @@ export default function ObserverPage() {
                   </svg>
                 </div>
 
+                {/* Small floating stone block */}
                 <div className="absolute -bottom-2 -left-4">
                   <svg viewBox="0 0 40 40" className="w-8 h-8 mc-block-float-2">
                     <polygon points="20,2 38,12 20,22 2,12" fill="#9a9a9a" />
@@ -225,11 +258,20 @@ export default function ObserverPage() {
                     <polygon points="38,12 20,22 20,38 38,28" fill="#6a6a6a" />
                   </svg>
                 </div>
+
+                {/* Small floating wood block */}
+                <div className="absolute top-2 -left-6">
+                  <svg viewBox="0 0 40 40" className="w-7 h-7 mc-block-float-3">
+                    <polygon points="20,2 38,12 20,22 2,12" fill="#a88c5c" />
+                    <polygon points="2,12 20,22 20,38 2,28" fill="#8c6c3c" />
+                    <polygon points="38,12 20,22 20,38 38,28" fill="#765436" />
+                  </svg>
+                </div>
               </div>
 
               {/* Tagline */}
               <p className="text-xl font-semibold text-emerald-800/80">
-                Explore the Block World
+                ⛏ Explore the Block World
               </p>
               <p className="text-sm text-emerald-700/60 mt-1">
                 Your agents are waiting...
@@ -247,12 +289,18 @@ export default function ObserverPage() {
             <div className="max-w-7xl mx-auto px-6 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <button onClick={() => setViewMode('landing')} className="p-2 rounded-lg hover:bg-stone-100 transition-colors">
-                    <Globe className="w-6 h-6 text-emerald-600" />
+                  <button onClick={() => setViewMode('landing')} className="p-2 rounded-lg hover:bg-emerald-50 transition-colors flex items-center gap-1.5">
+                    <svg viewBox="0 0 16 16" className="w-5 h-5 text-emerald-600">
+                      <rect x="1" y="1" width="6" height="6" fill="#5d9b3a" rx="0.5"/>
+                      <rect x="1" y="1" width="6" height="2" fill="#6aaa40" rx="0.5"/>
+                      <rect x="9" y="1" width="6" height="6" fill="#866043" rx="0.5"/>
+                      <rect x="1" y="9" width="6" height="6" fill="#765436" rx="0.5"/>
+                      <rect x="9" y="9" width="6" height="6" fill="#4ee4d0" rx="0.5"/>
+                    </svg>
                   </button>
                   <div>
                     <h1 className="text-xl font-bold text-stone-900">
-                      MineWorld
+                      <span className="text-emerald-600">Mine</span>World
                     </h1>
                     <div className="flex items-center gap-2 text-sm text-stone-500">
                       <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-400'}`} />

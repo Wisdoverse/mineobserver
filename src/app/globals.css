@@ -425,6 +425,10 @@ body {
   animation: mc-block-float 5s ease-in-out infinite;
   animation-delay: 1.5s;
 }
+.mc-block-float-3 {
+  animation: mc-block-float 4.5s ease-in-out infinite;
+  animation-delay: 0.8s;
+}
 
 /* Pixelated border for character parts */
 .pixel-border {
