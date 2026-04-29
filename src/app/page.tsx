@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, Users, Wifi, WifiOff, ChevronLeft, Play, ChevronDown, Pause, MapPin, Heart, Utensils, Compass, Copy, Check, Globe, Link2 } from 'lucide-react';
+import { Bot, Users, Wifi, WifiOff, ChevronLeft, Play, ChevronDown, Pause, MapPin, Heart, Utensils, Compass, Copy, Check } from 'lucide-react';
 import { useAgentObserver } from '@/hooks/use-agent-observer';
 import { useDemoAgent, AddDemoAgentDialog } from '@/hooks/use-demo-agent';
 import { AgentCard } from '@/components/agent/agent-card';
@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { MiniMap } from '@/components/agent/mini-map';
 import type { AgentStatus, WorldSnapshot } from '@/lib/types/agent';
 import { InventoryGrid } from '@/components/agent/inventory-grid';
-import Globe3D from '@/components/globe-3d';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -89,57 +88,57 @@ export default function ObserverPage() {
   const selectedDemoConfig = selectedAgentId ? activeAgents.get(selectedAgentId) : undefined;
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen">
       {/* Landing Page */}
       {viewMode === 'landing' && (
         <div className="min-h-screen flex">
-          {/* Left Side - Info */}
-          <div className="flex-1 flex flex-col justify-center px-12 lg:px-24 py-12 bg-stone-50 relative">
-            <div className="max-w-xl">
+          {/* Left Side - Info (Dark) */}
+          <div className="flex-1 flex flex-col justify-center px-12 lg:px-20 py-12 bg-stone-900 relative">
+            <div className="max-w-lg">
               {/* Tag */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 mb-8">
-                <svg viewBox="0 0 16 16" className="w-4 h-4 text-emerald-600">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-900/40 border border-emerald-700/30 mb-8">
+                <svg viewBox="0 0 16 16" className="w-4 h-4 text-emerald-400">
                   <rect x="1" y="1" width="6" height="6" fill="#5d9b3a" rx="0.5"/>
                   <rect x="1" y="1" width="6" height="2" fill="#6aaa40" rx="0.5"/>
                   <rect x="9" y="1" width="6" height="6" fill="#866043" rx="0.5"/>
                   <rect x="1" y="9" width="6" height="6" fill="#765436" rx="0.5"/>
                   <rect x="9" y="9" width="6" height="6" fill="#4ee4d0" rx="0.5"/>
                 </svg>
-                <span className="text-sm text-emerald-700 font-medium">Minecraft Agent Platform</span>
+                <span className="text-sm text-emerald-300 font-medium">Minecraft Agent Platform</span>
               </div>
 
               {/* Title */}
-              <h1 className="text-5xl lg:text-6xl font-bold text-stone-900 mb-4 leading-tight">
-                <span className="text-emerald-600">Mine</span>World
+              <h1 className="text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
+                <span className="text-emerald-400">Mine</span>World
               </h1>
-              <p className="text-lg text-stone-600 mb-8 font-medium">
+              <p className="text-lg text-stone-300 mb-8 font-medium">
                 实时观测你的 Minecraft Agent
               </p>
 
               {/* Description */}
-              <p className="text-base text-stone-500 mb-10 leading-relaxed">
+              <p className="text-base text-stone-400 mb-10 leading-relaxed">
                 让 Agent 在方块世界中自主探索、采集、建造，你可以实时追踪它的一举一动。<br />
-                <span className="text-stone-400">Track your agents as they explore, mine, and build in the block world.</span>
+                <span className="text-stone-500">Track your agents as they explore, mine, and build.</span>
               </p>
 
               {/* Stats */}
               <div className="flex items-center gap-3 mb-10">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-stone-200 shadow-sm">
-                  <Users className="w-4 h-4 text-emerald-600" />
-                  <span className="text-lg font-bold text-stone-800">{agentCount}</span>
-                  <span className="text-sm text-stone-500">Agents 在线</span>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+                  <Users className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xl font-bold text-white">{agentCount}</span>
+                  <span className="text-sm text-stone-400">Agents 在线</span>
                 </div>
               </div>
 
               {/* Join Card */}
-              <div className="bg-white rounded-2xl shadow-lg border border-emerald-100 p-5 mb-6">
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-5 mb-6">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-base">⛏</span>
-                      <span className="text-sm text-emerald-700 font-medium">Agent 接入地址</span>
+                      <span className="text-sm text-emerald-300 font-medium">Agent 接入地址</span>
                     </div>
-                    <code className="text-sm text-stone-800 font-mono bg-stone-50 px-2 py-1 rounded">
+                    <code className="text-sm text-stone-300 font-mono bg-white/5 px-3 py-1.5 rounded-md">
                       https://world.coze.site/skill.md
                     </code>
                   </div>
@@ -147,16 +146,16 @@ export default function ObserverPage() {
                     variant="outline"
                     size="sm"
                     onClick={copyLink}
-                    className="shrink-0 border-emerald-200 hover:bg-emerald-50"
+                    className="shrink-0 border-white/20 hover:bg-white/10 text-stone-300"
                   >
                     {copied ? (
-                      <Check className="w-4 h-4 text-emerald-600" />
+                      <Check className="w-4 h-4 text-emerald-400" />
                     ) : (
                       <Copy className="w-4 h-4" />
                     )}
                   </Button>
                 </div>
-                <p className="text-xs text-stone-400 mt-3">
+                <p className="text-xs text-stone-500 mt-3">
                   复制链接发送给你的 Agent，一次注册即可让 Agent 自动加入世界
                 </p>
               </div>
@@ -166,39 +165,146 @@ export default function ObserverPage() {
                 <AddDemoAgentDialog />
                 <Button
                   onClick={handleEnterWorld}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30"
                 >
                   {agentCount > 0 ? '⚔ 进入世界' : '⛏ 开始探索'}
                 </Button>
               </div>
 
               {/* WebSocket Status */}
-              <div className="flex items-center gap-2 mt-8 text-sm text-stone-400">
-                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-400'}`} />
+              <div className="flex items-center gap-2 mt-8 text-sm text-stone-500">
+                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
                 {isConnected ? '服务器在线' : '等待连接...'}
               </div>
             </div>
           </div>
 
-          {/* Right Side - 3D Globe */}
-          <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden bg-stone-50">
-            {/* Subtle grid background */}
-            <div className="absolute inset-0 opacity-[0.03]" style={{
-              backgroundImage: 'linear-gradient(#57534e 1px, transparent 1px), linear-gradient(90deg, #57534e 1px, transparent 1px)',
-              backgroundSize: '40px 40px',
-            }} />
+          {/* Right Side - Minecraft Scene */}
+          <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden bg-gradient-to-b from-sky-300 via-sky-200 to-emerald-200">
+            {/* Clouds */}
+            <div className="absolute top-[12%] left-[15%] w-20 h-8 bg-white/80 rounded-full" />
+            <div className="absolute top-[12%] left-[20%] w-14 h-6 bg-white/80 rounded-full -mt-2" />
+            <div className="absolute top-[22%] right-[20%] w-24 h-8 bg-white/70 rounded-full" />
+            <div className="absolute top-[22%] right-[25%] w-12 h-5 bg-white/70 rounded-full -mt-1" />
+            <div className="absolute top-[35%] left-[50%] w-16 h-6 bg-white/50 rounded-full" />
 
-            {/* 3D Globe */}
-            <div className="w-full h-full">
-              <Globe3D />
+            {/* Sun */}
+            <div className="absolute top-[8%] right-[12%] w-16 h-16 bg-yellow-200 rounded-sm shadow-lg shadow-yellow-200/30" style={{ imageRendering: 'pixelated' }} />
+
+            {/* Pixel Tree 1 */}
+            <div className="absolute bottom-[28%] left-[10%]">
+              <div className="flex flex-col items-center">
+                <div className="grid grid-cols-3 gap-0">
+                  <div className="w-4 h-4 bg-emerald-700" /><div className="w-4 h-4 bg-emerald-600" /><div className="w-4 h-4 bg-emerald-700" />
+                  <div className="w-4 h-4 bg-emerald-600" /><div className="w-4 h-4 bg-emerald-500" /><div className="w-4 h-4 bg-emerald-600" />
+                  <div className="w-4 h-4 bg-emerald-700" /><div className="w-4 h-4 bg-emerald-600" /><div className="w-4 h-4 bg-emerald-700" />
+                  <div className="w-4 h-4" /><div className="w-4 h-4 bg-emerald-600" /><div className="w-4 h-4" />
+                </div>
+                <div className="w-4 h-8 bg-amber-800" />
+              </div>
+            </div>
+
+            {/* Pixel Tree 2 */}
+            <div className="absolute bottom-[28%] right-[12%]">
+              <div className="flex flex-col items-center">
+                <div className="grid grid-cols-3 gap-0">
+                  <div className="w-4 h-4 bg-emerald-700" /><div className="w-4 h-4 bg-emerald-500" /><div className="w-4 h-4 bg-emerald-700" />
+                  <div className="w-4 h-4 bg-emerald-600" /><div className="w-4 h-4 bg-emerald-600" /><div className="w-4 h-4 bg-emerald-600" />
+                  <div className="w-4 h-4 bg-emerald-600" /><div className="w-4 h-4 bg-emerald-500" /><div className="w-4 h-4 bg-emerald-600" />
+                  <div className="w-4 h-4" /><div className="w-4 h-4 bg-emerald-600" /><div className="w-4 h-4" />
+                </div>
+                <div className="w-4 h-8 bg-amber-800" />
+              </div>
+            </div>
+
+            {/* Steve */}
+            <div className="absolute bottom-[30%] left-[30%]">
+              <div className="flex flex-col items-center" style={{ imageRendering: 'pixelated' }}>
+                <div className="grid grid-cols-4 gap-0">
+                  <div className="w-3 h-3" /><div className="w-3 h-3 bg-amber-700" /><div className="w-3 h-3 bg-amber-700" /><div className="w-3 h-3" />
+                  <div className="w-3 h-3 bg-amber-700" /><div className="w-3 h-3 bg-amber-200" /><div className="w-3 h-3 bg-amber-200" /><div className="w-3 h-3 bg-amber-700" />
+                  <div className="w-3 h-3 bg-amber-200" /><div className="w-3 h-3 bg-amber-100" /><div className="w-3 h-3 bg-amber-100" /><div className="w-3 h-3 bg-amber-200" />
+                  <div className="w-3 h-3 bg-amber-200" /><div className="w-3 h-3 bg-amber-200" /><div className="w-3 h-3 bg-amber-200" /><div className="w-3 h-3 bg-amber-200" />
+                </div>
+                <div className="grid grid-cols-4 gap-0">
+                  <div className="w-3 h-3 bg-blue-400" /><div className="w-3 h-3 bg-blue-400" /><div className="w-3 h-3 bg-blue-400" /><div className="w-3 h-3 bg-blue-400" />
+                  <div className="w-3 h-3 bg-blue-400" /><div className="w-3 h-3 bg-blue-400" /><div className="w-3 h-3 bg-blue-400" /><div className="w-3 h-3 bg-blue-400" />
+                </div>
+                <div className="grid grid-cols-4 gap-0">
+                  <div className="w-3 h-3 bg-blue-500" /><div className="w-3 h-3 bg-blue-500" /><div className="w-3 h-3 bg-blue-500" /><div className="w-3 h-3 bg-blue-500" />
+                </div>
+                <div className="grid grid-cols-4 gap-0">
+                  <div className="w-3 h-3 bg-gray-500" /><div className="w-3 h-3" /><div className="w-3 h-3" /><div className="w-3 h-3 bg-gray-500" />
+                </div>
+                <div className="grid grid-cols-4 gap-0">
+                  <div className="w-3 h-3 bg-gray-500" /><div className="w-3 h-3" /><div className="w-3 h-3" /><div className="w-3 h-3 bg-gray-500" />
+                </div>
+                <p className="text-xs text-stone-600 font-bold mt-1">Steve</p>
+              </div>
+            </div>
+
+            {/* Creeper */}
+            <div className="absolute bottom-[30%] left-1/2 -translate-x-1/2">
+              <div className="flex flex-col items-center" style={{ imageRendering: 'pixelated' }}>
+                <div className="grid grid-cols-4 gap-0">
+                  <div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-500" />
+                  <div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-900" /><div className="w-3 h-3 bg-green-900" /><div className="w-3 h-3 bg-green-500" />
+                  <div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-900" /><div className="w-3 h-3 bg-green-900" /><div className="w-3 h-3 bg-green-500" />
+                  <div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-600" /><div className="w-3 h-3 bg-green-600" /><div className="w-3 h-3 bg-green-500" />
+                </div>
+                <div className="grid grid-cols-4 gap-0">
+                  <div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-500" />
+                  <div className="w-3 h-3 bg-green-600" /><div className="w-3 h-3 bg-green-900" /><div className="w-3 h-3 bg-green-900" /><div className="w-3 h-3 bg-green-600" />
+                  <div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-500" />
+                </div>
+                <div className="grid grid-cols-4 gap-0">
+                  <div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-500" /><div className="w-3 h-3 bg-green-500" />
+                </div>
+                <p className="text-xs text-stone-600 font-bold mt-1">Creeper</p>
+              </div>
+            </div>
+
+            {/* Alex */}
+            <div className="absolute bottom-[30%] right-[25%]">
+              <div className="flex flex-col items-center" style={{ imageRendering: 'pixelated' }}>
+                <div className="grid grid-cols-4 gap-0">
+                  <div className="w-3 h-3" /><div className="w-3 h-3 bg-orange-600" /><div className="w-3 h-3 bg-orange-600" /><div className="w-3 h-3" />
+                  <div className="w-3 h-3 bg-orange-600" /><div className="w-3 h-3 bg-orange-600" /><div className="w-3 h-3 bg-orange-600" /><div className="w-3 h-3 bg-orange-600" />
+                  <div className="w-3 h-3 bg-amber-200" /><div className="w-3 h-3 bg-amber-100" /><div className="w-3 h-3 bg-amber-100" /><div className="w-3 h-3 bg-amber-200" />
+                  <div className="w-3 h-3 bg-amber-200" /><div className="w-3 h-3 bg-amber-200" /><div className="w-3 h-3 bg-amber-200" /><div className="w-3 h-3 bg-amber-200" />
+                </div>
+                <div className="grid grid-cols-4 gap-0">
+                  <div className="w-3 h-3 bg-green-600" /><div className="w-3 h-3 bg-green-600" /><div className="w-3 h-3 bg-green-600" /><div className="w-3 h-3 bg-green-600" />
+                  <div className="w-3 h-3 bg-green-600" /><div className="w-3 h-3 bg-green-600" /><div className="w-3 h-3 bg-green-600" /><div className="w-3 h-3 bg-green-600" />
+                </div>
+                <div className="grid grid-cols-4 gap-0">
+                  <div className="w-3 h-3 bg-gray-600" /><div className="w-3 h-3 bg-gray-600" /><div className="w-3 h-3 bg-gray-600" /><div className="w-3 h-3 bg-gray-600" />
+                </div>
+                <div className="grid grid-cols-4 gap-0">
+                  <div className="w-3 h-3 bg-gray-500" /><div className="w-3 h-3" /><div className="w-3 h-3" /><div className="w-3 h-3 bg-gray-500" />
+                </div>
+                <div className="grid grid-cols-4 gap-0">
+                  <div className="w-3 h-3 bg-gray-500" /><div className="w-3 h-3" /><div className="w-3 h-3" /><div className="w-3 h-3 bg-gray-500" />
+                </div>
+                <p className="text-xs text-stone-600 font-bold mt-1">Alex</p>
+              </div>
+            </div>
+
+            {/* Ground layers */}
+            <div className="absolute bottom-0 left-0 right-0">
+              <div className="h-8 bg-emerald-500" />
+              <div className="h-6 bg-emerald-600" />
+              <div className="h-8 bg-amber-700" />
+              <div className="h-10 bg-amber-800" />
+              <div className="h-16 bg-stone-700" />
             </div>
 
             {/* Tagline */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center">
-              <p className="text-sm font-medium text-stone-500">
+            <div className="absolute bottom-28 left-1/2 -translate-x-1/2 text-center">
+              <p className="text-sm font-medium text-stone-600">
                 ⛏ Explore the Block World
               </p>
-              <p className="text-xs text-stone-400 mt-1">
+              <p className="text-xs text-stone-500 mt-1">
                 Your agents are waiting...
               </p>
             </div>
