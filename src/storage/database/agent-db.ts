@@ -207,12 +207,18 @@ export const agentEventDb = {
       return;
     }
     
-    // 删除不在保留列表中的事件
-    const { error } = await client
-      .from('agent_events')
-      .delete()
-      .eq('agent_id', agentId)
-      .not('id', 'in', keepIds);
+    // 删除不在保留列表中的事件（使用原始 SQL 避免 Supabase 过滤语法问题）
+    const { error } = await client.rpc('delete_events_except', {
+      p_agent_id: agentId,
+      p_keep_ids: keepIds,
+    }).catch(() => {
+      // 如果 RPC 不存在，尝试使用 not in 语法（修复 Supabase JS 过滤问题）
+      return client
+        .from('agent_events')
+        .delete()
+        .eq('agent_id', agentId)
+        .or(`id.not.in.(${keepIds.join(',')})`);
+    });
     
     if (error) throw new Error(`清理旧事件失败: ${error.message}`);
   },
