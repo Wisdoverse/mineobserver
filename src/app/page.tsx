@@ -63,7 +63,7 @@ export default function ObserverPage() {
                 <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white animate-pulse" />
               </div>
               <div>
-                <h1 className="text-lg font-bold tracking-tight text-gray-900">Agent Observer</h1>
+                <h1 className="text-lg font-bold tracking-tight text-gray-900">Minecraft Agent 观测台</h1>
                 <p className="text-xs text-gray-500">Minecraft 实时监控</p>
               </div>
             </div>
@@ -86,22 +86,34 @@ export default function ObserverPage() {
           <div className="container mx-auto px-4 py-8">
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-2">
-                <Users className="w-5 h-5 text-emerald-600" />
-                <h2 className="text-2xl font-bold text-gray-900">活跃 Agent</h2>
+                <Compass className="w-5 h-5 text-emerald-600" />
+                <h2 className="text-2xl font-bold text-gray-900">游戏中的 Agent</h2>
                 <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">{agents.size}</span>
               </div>
               <p className="text-gray-500 text-sm">
-                实时监控 Agent 活动 {lastUpdate > 0 && <span className="ml-2">最后更新: {getTimeSince(lastUpdate)}</span>}
+                实时监控 Minecraft 世界中的 Agent 状态 {lastUpdate > 0 && <span className="ml-2">最后更新: {getTimeSince(lastUpdate)}</span>}
               </p>
             </div>
 
             {agents.size === 0 ? (
               <div className="flex flex-col items-center justify-center py-32">
-                <div className="w-24 h-24 mb-6 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center">
-                  <Bot className="w-12 h-12 text-gray-400" />
+                <div className="w-24 h-24 mb-6 rounded-2xl bg-emerald-50 border-2 border-dashed border-emerald-200 flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="w-12 h-12 text-emerald-400">
+                    <rect x="4" y="4" width="4" height="4" fill="currentColor"/>
+                    <rect x="8" y="4" width="4" height="4" fill="currentColor"/>
+                    <rect x="12" y="4" width="4" height="4" fill="currentColor"/>
+                    <rect x="16" y="4" width="4" height="4" fill="currentColor"/>
+                    <rect x="4" y="8" width="4" height="4" fill="currentColor"/>
+                    <rect x="16" y="8" width="4" height="4" fill="currentColor"/>
+                    <rect x="4" y="12" width="4" height="4" fill="currentColor"/>
+                    <rect x="8" y="12" width="8" height="4" fill="currentColor"/>
+                    <rect x="16" y="12" width="4" height="4" fill="currentColor"/>
+                    <rect x="4" y="16" width="4" height="4" fill="currentColor"/>
+                    <rect x="16" y="16" width="4" height="4" fill="currentColor"/>
+                  </svg>
                 </div>
-                <h3 className="text-xl font-semibold mb-2 text-gray-900">暂无活跃 Agent</h3>
-                <p className="text-gray-500 text-center">点击右上角"添加演示 Agent"启动测试</p>
+                <h3 className="text-xl font-semibold mb-2 text-gray-900">等待 Agent 加入...</h3>
+                <p className="text-gray-500 text-center">点击右上角「添加演示 Agent」启动测试</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -127,18 +139,30 @@ export default function ObserverPage() {
             <div className="container mx-auto px-4 py-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <button onClick={handleBack} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all border border-gray-200">
+                  <button onClick={handleBack} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-all border border-emerald-200">
                     <ChevronLeft className="w-4 h-4" />
-                    <span className="text-sm">返回</span>
+                    <span className="text-sm font-medium">返回列表</span>
                   </button>
                   <div className="h-6 w-px bg-gray-300" />
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center">
-                      <Bot className="w-4 h-4 text-white" />
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-md">
+                      <svg viewBox="0 0 16 16" className="w-5 h-5 text-white">
+                        <rect x="2" y="2" width="3" height="3" fill="currentColor"/>
+                        <rect x="5" y="2" width="3" height="3" fill="currentColor"/>
+                        <rect x="8" y="2" width="3" height="3" fill="currentColor"/>
+                        <rect x="11" y="2" width="3" height="3" fill="currentColor"/>
+                        <rect x="2" y="5" width="3" height="3" fill="currentColor"/>
+                        <rect x="11" y="5" width="3" height="3" fill="currentColor"/>
+                        <rect x="2" y="8" width="3" height="3" fill="currentColor"/>
+                        <rect x="5" y="8" width="6" height="3" fill="currentColor"/>
+                        <rect x="11" y="8" width="3" height="3" fill="currentColor"/>
+                        <rect x="2" y="11" width="3" height="3" fill="currentColor"/>
+                        <rect x="11" y="11" width="3" height="3" fill="currentColor"/>
+                      </svg>
                     </div>
                     <div>
-                      <h2 className="font-semibold text-gray-900">{selectedAgent.username}</h2>
-                      <p className="text-xs text-gray-500">{selectedAgent.position.x.toFixed(1)}, {selectedAgent.position.y.toFixed(1)}, {selectedAgent.position.z.toFixed(1)}</p>
+                      <h2 className="font-bold text-gray-900">{selectedAgent.username}</h2>
+                      <p className="text-xs text-gray-500 font-mono">{selectedAgent.position.x.toFixed(1)}, {selectedAgent.position.y.toFixed(1)}, {selectedAgent.position.z.toFixed(1)}</p>
                     </div>
                   </div>
                 </div>
@@ -146,9 +170,9 @@ export default function ObserverPage() {
                 {/* Tabs */}
                 <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg border border-gray-200">
                   {[
-                    { id: 'overview', icon: Activity, label: '总览' },
-                    { id: 'map', icon: Map, label: '地图' },
-                    { id: 'inventory', icon: Backpack, label: '背包' },
+                    { id: 'overview', icon: Activity, label: '状态' },
+                    { id: 'map', icon: Map, label: '周围' },
+                    { id: 'inventory', icon: Backpack, label: '物品' },
                     { id: 'events', icon: Clock, label: '日志' },
                   ].map(({ id, icon: Icon, label }) => (
                     <button key={id} onClick={() => setActiveTab(id as typeof activeTab)}
