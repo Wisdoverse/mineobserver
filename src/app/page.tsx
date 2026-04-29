@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Bot, Users, Wifi, WifiOff, ChevronLeft, Map, Backpack, 
   Activity, Clock, Heart, Cookie, Footprints, Eye, Compass, Grid3X3
@@ -8,7 +8,7 @@ import {
 import { AgentCard, MiniMap, InventoryGrid } from '@/components/agent';
 import { useAgentObserver } from '@/hooks/use-agent-observer';
 import { AddDemoAgentDialog } from '@/hooks/use-demo-agent';
-import type { AgentEvent, NearbyBlock, NearbyEntity, InventorySlot, Position } from '@/lib/types';
+import type { AgentEvent } from '@/lib/types';
 
 export default function ObserverPage() {
   const { agents, events, worldSnapshots, isConnected, lastUpdate } = useAgentObserver();
@@ -96,24 +96,63 @@ export default function ObserverPage() {
             </div>
 
             {agents.size === 0 ? (
-              <div className="flex flex-col items-center justify-center py-32">
-                <div className="w-24 h-24 mb-6 rounded-2xl bg-emerald-50 border-2 border-dashed border-emerald-200 flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" className="w-12 h-12 text-emerald-400">
-                    <rect x="4" y="4" width="4" height="4" fill="currentColor"/>
-                    <rect x="8" y="4" width="4" height="4" fill="currentColor"/>
-                    <rect x="12" y="4" width="4" height="4" fill="currentColor"/>
-                    <rect x="16" y="4" width="4" height="4" fill="currentColor"/>
-                    <rect x="4" y="8" width="4" height="4" fill="currentColor"/>
-                    <rect x="16" y="8" width="4" height="4" fill="currentColor"/>
-                    <rect x="4" y="12" width="4" height="4" fill="currentColor"/>
-                    <rect x="8" y="12" width="8" height="4" fill="currentColor"/>
-                    <rect x="16" y="12" width="4" height="4" fill="currentColor"/>
-                    <rect x="4" y="16" width="4" height="4" fill="currentColor"/>
-                    <rect x="16" y="16" width="4" height="4" fill="currentColor"/>
-                  </svg>
+              <div className="space-y-8">
+                {/* 接入指南 */}
+                <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-2xl p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                      <svg viewBox="0 0 24 24" className="w-6 h-6 text-white">
+                        <path fill="currentColor" d="M13 3v2h-2V3h2zm4 0v2h-2V3h2zm-8 0v2H7V3h2zm8 8v2h-2v-2h2zm-4 0v2h-2v-2h2zm-4 0v2H9v-2h2zm-4 0v2H5v-2h2zm8 0v2h-2v-2h2zm4 0v2h-2v-2h2zm-4 8v2h-2v-2h2zm-4 0v2H9v-2h2zm-4 0v2H5v-2h2zm8 4v2h-2v-2h2zm-4 0v2h-2v-2h2z"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-emerald-900 mb-2">如何让真实 Agent 加入观测台</h3>
+                      <div className="text-sm text-emerald-700 space-y-2">
+                        <p>要让你的 Minecraft Agent 加入观测台，只需在 Agent 代码中添加以下 WebSocket 连接配置：</p>
+                        <div className="bg-slate-900 rounded-lg p-4 mt-3 font-mono text-xs">
+                          <p className="text-emerald-400">{"// 连接到观测台"}</p>
+                          <p className="text-gray-300">WebSocket: <span className="text-yellow-400">wss://你的域名/ws/agent</span></p>
+                          <p className="text-gray-300 mt-2">端口: <span className="text-yellow-400">5000</span></p>
+                        </div>
+                        <div className="mt-3 space-y-1">
+                          <p><strong>连接流程：</strong></p>
+                          <ol className="list-decimal list-inside space-y-1 ml-2">
+                            <li>连接 WebSocket 到 /ws/agent 端点</li>
+                            <li>发送 <code className="bg-emerald-100 px-1 rounded">agent:register</code> 消息注册 Agent</li>
+                            <li>定期发送 <code className="bg-emerald-100 px-1 rounded">agent:status:update</code> 更新状态</li>
+                            <li>可选发送 <code className="bg-emerald-100 px-1 rounded">agent:world:snapshot</code> 更新周围环境</li>
+                          </ol>
+                        </div>
+                        <p className="mt-3 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                          Agent 连接后会自动出现在列表中
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold mb-2 text-gray-900">等待 Agent 加入...</h3>
-                <p className="text-gray-500 text-center">点击右上角「添加演示 Agent」启动测试</p>
+
+                {/* 空状态 */}
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="w-24 h-24 mb-6 rounded-2xl bg-emerald-50 border-2 border-dashed border-emerald-200 flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" className="w-12 h-12 text-emerald-400">
+                      <rect x="4" y="4" width="4" height="4" fill="currentColor"/>
+                      <rect x="8" y="4" width="4" height="4" fill="currentColor"/>
+                      <rect x="12" y="4" width="4" height="4" fill="currentColor"/>
+                      <rect x="16" y="4" width="4" height="4" fill="currentColor"/>
+                      <rect x="4" y="8" width="4" height="4" fill="currentColor"/>
+                      <rect x="16" y="8" width="4" height="4" fill="currentColor"/>
+                      <rect x="4" y="12" width="4" height="4" fill="currentColor"/>
+                      <rect x="8" y="12" width="8" height="4" fill="currentColor"/>
+                      <rect x="16" y="12" width="4" height="4" fill="currentColor"/>
+                      <rect x="4" y="16" width="4" height="4" fill="currentColor"/>
+                      <rect x="16" y="16" width="4" height="4" fill="currentColor"/>
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2 text-gray-900">暂无在线 Agent</h3>
+                  <p className="text-gray-500 text-center mb-4">你可以添加演示 Agent 进行测试</p>
+                  <AddDemoAgentDialog />
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
