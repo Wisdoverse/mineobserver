@@ -3,11 +3,26 @@
 import { useMemo } from 'react';
 import type { Position } from '@/lib/types/agent';
 
-interface MiniMapProps {
+interface BlockItem {
   position: Position;
+  type: string;
+  name?: string;
+}
+
+interface EntityItem {
+  position: Position;
+  type: string;
+  name?: string;
+  distance?: number;
+}
+
+interface MiniMapProps {
+  playerX: number;
+  playerY: number;
+  playerZ: number;
   yaw: number;
-  blocks?: Array<{ position: Position; type: string; name: string }>;
-  entities?: Array<{ type: string; name?: string; position: Position; distance: number }>;
+  blocks?: BlockItem[];
+  entities?: EntityItem[];
 }
 
 const BLOCK_COLORS: Record<string, string> = {
@@ -80,7 +95,7 @@ function getEntityIcon(entityType: string): string {
   return ENTITY_ICONS[normalized] || ENTITY_ICONS.default;
 }
 
-export function MiniMap({ position, yaw, blocks = [], entities = [] }: MiniMapProps) {
+export function MiniMap({ playerX, playerY, playerZ, yaw, blocks = [], entities = [] }: MiniMapProps) {
   const RADIUS = 16;
   const SIZE = 200;
   const CELL_SIZE = SIZE / (RADIUS * 2 + 1);
@@ -88,22 +103,26 @@ export function MiniMap({ position, yaw, blocks = [], entities = [] }: MiniMapPr
   // 过滤范围内的方块和实体
   const visibleBlocks = useMemo(() => {
     return blocks.filter((b) => {
-      const dx = Math.abs(b.position.x - position.x);
-      const dz = Math.abs(b.position.z - position.z);
-      return dx <= RADIUS && dz <= RADIUS && b.position.y >= position.y - 2 && b.position.y <= position.y + 3;
+      const dx = Math.abs(b.position.x - playerX);
+      const dz = Math.abs(b.position.z - playerZ);
+      return dx <= RADIUS && dz <= RADIUS && b.position.y >= playerY - 2 && b.position.y <= playerY + 3;
     });
-  }, [blocks, position]);
+  }, [blocks, playerX, playerY, playerZ]);
 
   const visibleEntities = useMemo(() => {
     return entities
       .filter((e) => {
-        const dx = Math.abs(e.position.x - position.x);
-        const dz = Math.abs(e.position.z - position.z);
+        const dx = Math.abs(e.position.x - playerX);
+        const dz = Math.abs(e.position.z - playerZ);
         return dx <= RADIUS && dz <= RADIUS;
       })
-      .sort((a, b) => a.distance - b.distance)
+      .sort((a, b) => {
+        const distA = Math.sqrt(Math.pow(a.position.x - playerX, 2) + Math.pow(a.position.z - playerZ, 2));
+        const distB = Math.sqrt(Math.pow(b.position.x - playerX, 2) + Math.pow(b.position.z - playerZ, 2));
+        return distA - distB;
+      })
       .slice(0, 10);
-  }, [entities, position]);
+  }, [entities, playerX, playerZ]);
 
   // 绘制地图
   const mapGrid = useMemo(() => {
@@ -111,8 +130,8 @@ export function MiniMap({ position, yaw, blocks = [], entities = [] }: MiniMapPr
     for (let x = -RADIUS; x <= RADIUS; x++) {
       grid.push([]);
       for (let z = -RADIUS; z <= RADIUS; z++) {
-        const worldX = position.x + x;
-        const worldZ = position.z + z;
+        const worldX = playerX + x;
+        const worldZ = playerZ + z;
 
         // 查找该位置最高的方块
         const blocksAtPos = visibleBlocks.filter(
@@ -132,7 +151,7 @@ export function MiniMap({ position, yaw, blocks = [], entities = [] }: MiniMapPr
       }
     }
     return grid;
-  }, [position, visibleBlocks]);
+  }, [playerX, playerZ, visibleBlocks]);
 
   // 计算玩家图标旋转
   const playerRotation = -yaw * (Math.PI / 180);
@@ -142,9 +161,9 @@ export function MiniMap({ position, yaw, blocks = [], entities = [] }: MiniMapPr
       {/* 坐标显示 */}
       <div className="flex items-center justify-between text-sm">
         <div className="font-mono">
-          <span className="text-muted-foreground">X:</span> {position.x}{' '}
-          <span className="text-muted-foreground">Y:</span> {position.y}{' '}
-          <span className="text-muted-foreground">Z:</span> {position.z}
+          <span className="text-muted-foreground">X:</span> {playerX}{' '}
+          <span className="text-muted-foreground">Y:</span> {playerY}{' '}
+          <span className="text-muted-foreground">Z:</span> {playerZ}
         </div>
         <div className="text-muted-foreground">
           朝向: {Math.round(yaw)}°
@@ -181,7 +200,7 @@ export function MiniMap({ position, yaw, blocks = [], entities = [] }: MiniMapPr
                   fill={cell.color}
                   stroke="#9ca3af"
                   strokeWidth={0.5}
-                  opacity={0.7 + Math.min((cell.y - position.y + 2) * 0.1, 0.3)}
+                  opacity={0.7 + Math.min((cell.y - playerY + 2) * 0.1, 0.3)}
                 />
               );
             })
@@ -222,16 +241,22 @@ export function MiniMap({ position, yaw, blocks = [], entities = [] }: MiniMapPr
         <div className="space-y-1">
           <p className="text-xs font-medium text-muted-foreground">附近实体</p>
           <div className="flex flex-wrap gap-1">
-            {visibleEntities.map((entity, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs"
-                title={`${entity.type} - ${entity.distance.toFixed(1)}m`}
-              >
-                <span>{getEntityIcon(entity.type)}</span>
-                <span className="text-muted-foreground">{entity.distance.toFixed(0)}m</span>
-              </div>
-            ))}
+            {visibleEntities.map((entity, i) => {
+              const dist = Math.sqrt(
+                Math.pow(entity.position.x - playerX, 2) +
+                Math.pow(entity.position.z - playerZ, 2)
+              );
+              return (
+                <div
+                  key={i}
+                  className="flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs"
+                  title={`${entity.type} - ${dist.toFixed(1)}m`}
+                >
+                  <span>{getEntityIcon(entity.type)}</span>
+                  <span className="text-muted-foreground">{dist.toFixed(0)}m</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

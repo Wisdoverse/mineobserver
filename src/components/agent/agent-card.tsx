@@ -197,15 +197,21 @@ export function AgentCard({ agent, events, worldSnapshot, isSelected, onClick }:
         </TabsList>
 
         <TabsContent value="status" className="p-4">
-          <InventoryGrid inventory={agent.inventory} equipment={agent.equipment} />
+          <InventoryGrid
+            inventory={agent.inventory || []}
+            
+            equipment={agent.equipment}
+          />
         </TabsContent>
 
         <TabsContent value="map" className="p-4">
           <MiniMap
-            position={agent.position}
-            yaw={agent.yaw}
-            blocks={worldSnapshot?.blocks || []}
-            entities={worldSnapshot?.entities || []}
+            playerX={agent.position.x}
+            playerY={agent.position.y}
+            playerZ={agent.position.z}
+            yaw={agent.yaw || 0}
+            blocks={(worldSnapshot?.blocks || []).map((b: { position: { x: number; y: number; z: number }; type: string }) => ({ position: { x: b.position.x, y: b.position.y, z: b.position.z }, type: b.type }))}
+            entities={(worldSnapshot?.entities || []).map((e: { id?: string; name?: string; type: string; position: { x: number; y: number; z: number } }) => ({ id: e.id || e.name || String(Math.random()), type: e.type, position: e.position }))}
           />
         </TabsContent>
 
