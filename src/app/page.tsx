@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, Users, Wifi, WifiOff, ChevronLeft, Play, ChevronDown, Pause, MapPin, Heart, Utensils, Compass, Copy, Check } from 'lucide-react';
+import { Bot, Users, Wifi, WifiOff, ChevronLeft, Play, ChevronDown, Pause, MapPin, Heart, Utensils, Compass, Copy, Check, Database, Trash2 } from 'lucide-react';
 import { useAgentObserver } from '@/hooks/use-agent-observer';
 import { useDemoAgent, AddDemoAgentDialog } from '@/hooks/use-demo-agent';
 import { AgentCard } from '@/components/agent/agent-card';
@@ -17,6 +17,30 @@ export default function ObserverPage() {
   const [viewMode, setViewMode] = useState<'landing' | 'list' | 'detail'>('landing');
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [clearDataDialog, setClearDataDialog] = useState<'events' | 'all' | null>(null);
+  const [clearingData, setClearingData] = useState(false);
+
+  const handleClearData = async (scope: 'events' | 'all') => {
+    setClearingData(true);
+    try {
+      const res = await fetch('/api/admin/clear-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        // 断开所有演示 Agent
+        Array.from(activeAgents.keys()).forEach(agentId => stopDemoAgent(agentId));
+      }
+      alert(data.success ? data.message : (data.error || '操作失败'));
+    } catch {
+      alert('请求失败，请检查网络');
+    } finally {
+      setClearingData(false);
+      setClearDataDialog(null);
+    }
+  };
 
   const { agents, events, worldSnapshots, isConnected } = useAgentObserver();
   const { activeAgents, startDemoAgent, pauseDemoAgent, resumeDemoAgent, stopDemoAgent } = useDemoAgent();
@@ -395,6 +419,34 @@ export default function ObserverPage() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
+                  {/* 数据管理下拉菜单 */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Database className="w-4 h-4" />
+                        数据
+                        <ChevronDown className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>数据管理</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => setClearDataDialog('events')}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2 text-orange-500" />
+                        清空事件日志
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-red-600 cursor-pointer"
+                        onClick={() => setClearDataDialog('all')}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        清空所有数据
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>
@@ -607,6 +659,32 @@ export default function ObserverPage() {
           </main>
         </div>
       )}
+
+      {/* 数据清理确认对话框 */}
+      <AlertDialog open={clearDataDialog !== null} onOpenChange={(open) => !open && setClearDataDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {clearDataDialog === 'all' ? '清空所有数据' : '清空事件日志'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {clearDataDialog === 'all'
+                ? '此操作将清空所有 Agent、事件日志和世界快照数据，且不可恢复。确定要继续吗？'
+                : '此操作将清空所有事件日志和世界快照，保留 Agent 信息。确定要继续吗？'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearingData}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={clearingData}
+              className={clearDataDialog === 'all' ? 'bg-red-600 hover:bg-red-700' : ''}
+              onClick={() => clearDataDialog && handleClearData(clearDataDialog)}
+            >
+              {clearingData ? '清理中...' : '确认清空'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   );
