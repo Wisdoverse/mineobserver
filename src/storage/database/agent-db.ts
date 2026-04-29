@@ -207,21 +207,24 @@ export const agentEventDb = {
       return;
     }
     
-    // 删除不在保留列表中的事件（使用原始 SQL 避免 Supabase 过滤语法问题）
-    const { error } = await client.rpc('delete_events_except', {
-      p_agent_id: agentId,
-      p_keep_ids: keepIds,
-    }).catch(() => {
-      // 如果 RPC 不存在，尝试使用 not in 语法（修复 Supabase JS 过滤问题）
-      return client
-        .from('agent_events')
-        .delete()
-        .eq('agent_id', agentId)
-        .or(`id.not.in.(${keepIds.join(',')})`);
-    });
-    
-    if (error) throw new Error(`清理旧事件失败: ${error.message}`);
-  },
+	    // 删除不在保留列表中的事件
+	    try {
+	      // 先尝试使用 RPC 函数
+	      const { error: rpcError } = await client.rpc('delete_events_except', {
+	        p_agent_id: agentId,
+	        p_keep_ids: keepIds,
+	      });
+	      if (rpcError) throw new Error(`RPC 失败: ${rpcError.message}`);
+	    } catch {
+	      // 如果 RPC 失败，使用 not in 语法
+	      const { error } = await client
+	        .from('agent_events')
+	        .delete()
+	        .eq('agent_id', agentId)
+	        .or(`id.not.in.(${keepIds.join(',')})`);
+	      if (error) throw new Error(`清理旧事件失败: ${error.message}`);
+	    }
+	  },
 };
 
 // Agent 世界快照数据库操作
