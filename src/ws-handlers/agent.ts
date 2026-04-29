@@ -104,11 +104,12 @@ export function setupAgentHandler(wss: WebSocketServer) {
               // 检测位置变化
               if (
                 status.position &&
+                prevStatus.position &&
                 (status.position.x !== prevStatus.position.x ||
                   status.position.y !== prevStatus.position.y ||
                   status.position.z !== prevStatus.position.z)
               ) {
-                agentStateManager.addEvent(
+                const movedEvent = agentStateManager.addEvent(
                   agentId,
                   createAgentEvent(
                     agentId,
@@ -117,15 +118,21 @@ export function setupAgentHandler(wss: WebSocketServer) {
                     { from: prevStatus.position, to: updatedStatus.position }
                   )
                 );
+                if (movedEvent) {
+                  broadcastToObservers({ type: 'event:new', payload: { agentId, event: movedEvent } });
+                }
               }
 
               // 检测跳跃
               if (status.position && prevStatus.position) {
                 if (status.position.y > prevStatus.position.y + 0.5) {
-                  agentStateManager.addEvent(
+                  const jumpedEvent = agentStateManager.addEvent(
                     agentId,
                     createAgentEvent(agentId, 'jumped', `在 ${formatPosition(status.position)} 跳跃`)
                   );
+                  if (jumpedEvent) {
+                    broadcastToObservers({ type: 'event:new', payload: { agentId, event: jumpedEvent } });
+                  }
                 }
               }
             }
