@@ -98,35 +98,39 @@
 
 ## 消息协议
 
-所有 WebSocket 消息使用 JSON 格式：
-
-```typescript
-interface WsMessage<T = unknown> {
-  type: string;
-  payload: T;
-}
-```
+> 完整接口文档见 `public/api-docs.md`（可通过 `http://<host>:5000/api-docs.md` 在线访问）
 
 ### Agent -> 服务端 消息
 
 | type | payload | 说明 |
 |------|---------|------|
-| `agent:register` | `{ agentId, username, serverHost, serverPort }` | Agent 注册 |
-| `agent:status:update` | `{ agentId, status }` | 状态更新 |
-| `agent:event` | `{ agentId, event }` | 上报事件 |
+| `agent:register` | `{ agentId, username, serverHost, serverPort }` | Agent 注册/重连 |
+| `agent:status:update` | `{ agentId, status }` | 状态更新（支持部分更新） |
+| `agent:event` | `{ agentId, event }` | 上报自定义事件 |
 | `agent:world:snapshot` | `{ agentId, snapshot }` | 世界快照 |
 | `observer:register` | `{}` | 观测者注册 |
+| `ping` | `null` | 心跳 |
 
-### 服务端 -> Observer 消息
+### 服务端 -> 客户端 消息
 
 | type | payload | 说明 |
 |------|---------|------|
-| `agents:list` | `{ agents }` | 所有 Agent 列表 |
-| `agent:registered` | `{ agentId, status }` | Agent 注册通知 |
-| `agent:unregistered` | `{ agentId }` | Agent 断开通知 |
-| `status:update` | `{ agentId, status }` | 状态更新广播 |
+| `agents:list` | `{ agents }` | 所有 Agent 列表（注册时返回） |
+| `agent:registered` | `{ agentId, status }` | 新 Agent 注册通知 |
+| `status:update` | `{ agentId, status }` | 状态更新广播（含断开/重连） |
 | `event:new` | `{ agentId, event }` | 新事件通知 |
 | `world:snapshot` | `{ agentId, snapshot }` | 世界快照 |
+| `admin:data-cleared` | `{ scope }` | 数据清空通知 |
+| `pong` | `null` | 心跳回复 |
+
+### Agent 断开/重连行为
+
+- **断开**: 标记 `connected: false`，广播 `status:update`，**不删除**内存数据
+- **重连**: 同一 `agentId` 恢复在线，广播 `status:update`，保留历史数据
+
+## HTTP API
+
+- `POST /api/admin/clear-data` — 清空数据（scope: `"events"` | `"all"`）
 
 ## 观测者使用流程
 
@@ -140,7 +144,9 @@ interface WsMessage<T = unknown> {
 Minecraft Agent 需要通过 WebSocket 连接到此观测台并上报状态。Agent 端需要：
 
 1. 连接到 `ws://<observer-host>/ws/agent`
-2. 发送 `agent:register` 消息注册
-3. 定期发送 `agent:status:update` 更新状态
+2. 发送 `agent:register` 消息注册（建议使用稳定 agentId，避免随机值）
+3. 定期（2-5秒）发送 `agent:status:update` 更新状态
 4. 可选发送 `agent:event` 上报重要事件
 5. 可选发送 `agent:world:snapshot` 更新周围环境
+
+完整接入示例和字段说明见 `public/api-docs.md`
