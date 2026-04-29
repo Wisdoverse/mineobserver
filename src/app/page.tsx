@@ -31,9 +31,11 @@ export default function ObserverPage() {
   const { activeAgents, startDemoAgent, stopDemoAgent, stopAllDemoAgents } = useDemoAgent();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState<number>(0);
+  const [wsHost, setWsHost] = useState<string>('');
 
   useEffect(() => {
     setCurrentTime(Date.now());
+    setWsHost(window.location.host);
     const timer = setInterval(() => {
       setCurrentTime(Date.now());
     }, 1000);
@@ -227,7 +229,7 @@ export default function ObserverPage() {
                   <div className="bg-muted/50 p-3 rounded-lg">
                     <p className="text-xs font-mono text-muted-foreground mb-2">连接地址:</p>
                     <code className="text-sm">
-                      ws://{typeof window !== 'undefined' ? window.location.host : 'localhost'}/ws/agent
+                      {wsHost ? `ws://${wsHost}/ws/agent` : '加载中...'}
                     </code>
                   </div>
                 </CardContent>
