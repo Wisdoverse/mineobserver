@@ -1,6 +1,23 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { execSync } from 'child_process';
-import { getReportBuffer, createWrappedFetch } from 'coze-coding-dev-sdk';
+
+// Lazy import coze-coding-dev-sdk only when running in custom server (tsx),
+// not in Next.js Turbopack which can't resolve @langchain/core subpath exports.
+let _sdkLoaded = false;
+let _getReportBuffer: (() => any) | null = null;
+let _createWrappedFetch: ((buffer: any, tag: string) => typeof fetch) | null = null;
+
+function loadSdk(): void {
+  if (_sdkLoaded) return;
+  _sdkLoaded = true;
+  try {
+    const sdk = require('coze-coding-dev-sdk');
+    _getReportBuffer = sdk.getReportBuffer || null;
+    _createWrappedFetch = sdk.createWrappedFetch || null;
+  } catch {
+    // SDK not available (e.g. in Next.js Turbopack) — that's fine, skip reporting
+  }
+}
 
 let envLoaded = false;
 
@@ -105,9 +122,12 @@ function getSupabaseClient(token?: string): SupabaseClient {
     globalOptions.headers = { Authorization: `Bearer ${token}` };
   }
   try {
-    const buffer = getReportBuffer();
-    if (buffer) {
-      globalOptions.fetch = createWrappedFetch(buffer, 'supabase');
+    loadSdk();
+    if (_getReportBuffer && _createWrappedFetch) {
+      const buffer = _getReportBuffer();
+      if (buffer) {
+        globalOptions.fetch = _createWrappedFetch(buffer, 'supabase');
+      }
     }
   } catch {
     // Silent — reporting setup failure should not block client creation
