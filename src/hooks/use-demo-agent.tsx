@@ -94,6 +94,128 @@ const DEMO_EVENT_TYPES = [
   { type: 'jumped', description: '在 (12, 64, 18) 跳跃' },
 ];
 
+// 演示建造蓝图
+const DEMO_BLUEPRINTS = [
+  { name: '石头小屋', totalLayers: 5, blocksTotal: 120 },
+  { name: '瞭望塔', totalLayers: 8, blocksTotal: 256 },
+  { name: '农田', totalLayers: 1, blocksTotal: 64 },
+  { name: '围墙', totalLayers: 3, blocksTotal: 180 },
+  { name: '铁匠铺', totalLayers: 4, blocksTotal: 200 },
+  { name: '图书馆', totalLayers: 6, blocksTotal: 320 },
+];
+
+// 演示聊天消息
+const DEMO_CHAT_MESSAGES = [
+  { content: '发现了一个洞穴入口！', channel: 'public' as const },
+  { content: '有人看到钻石矿了吗？', channel: 'public' as const },
+  { content: '正在建造基地，需要一些橡木', channel: 'public' as const },
+  { content: '小心，前方有苦力怕！', channel: 'public' as const },
+  { content: '我已经挖到红石了', channel: 'public' as const },
+  { content: '谁有多余的铁锭？', channel: 'public' as const },
+  { content: '天快黑了，注意安全', channel: 'public' as const },
+  { content: '找到村庄了！', channel: 'public' as const },
+  { content: '这里有个废弃矿道', channel: 'whisper' as const },
+  { content: '集合坐标 (120, 64, -50)', channel: 'team' as const },
+  { content: '建造进度如何？', channel: 'team' as const },
+  { content: '我负责采集木材', channel: 'team' as const },
+];
+
+// 演示截图场景描述
+const DEMO_VISION_SCENES = [
+  { description: '日落时分的草原', biome: 'plains', timeOfDay: 'sunset', weather: 'clear' },
+  { description: '密林深处的洞穴入口', biome: 'forest', timeOfDay: 'night', weather: 'clear' },
+  { description: '沙漠中的村庄', biome: 'desert', timeOfDay: 'noon', weather: 'clear' },
+  { description: '雪山之巅', biome: 'snowy_peaks', timeOfDay: 'dawn', weather: 'snow' },
+  { description: '沼泽地带的怪物', biome: 'swamp', timeOfDay: 'midnight', weather: 'rain' },
+  { description: '峡谷中的岩浆瀑布', biome: 'badlands', timeOfDay: 'noon', weather: 'clear' },
+  { description: '海底神殿入口', biome: 'ocean', timeOfDay: 'dusk', weather: 'rain' },
+  { description: '丛林神庙', biome: 'jungle', timeOfDay: 'afternoon', weather: 'thunder' },
+];
+
+// 用 Canvas 生成简单的 Minecraft 风格截图（返回 Base64 data URL）
+function generateDemoScreenshot(width: number, height: number): string {
+  if (typeof document === 'undefined') return '';
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+
+  // 天空渐变
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, height * 0.6);
+  skyGrad.addColorStop(0, '#4A90D9');
+  skyGrad.addColorStop(0.5, '#87CEEB');
+  skyGrad.addColorStop(1, '#B0E0E6');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, width, height * 0.6);
+
+  // 地面
+  const groundGrad = ctx.createLinearGradient(0, height * 0.6, 0, height);
+  groundGrad.addColorStop(0, '#5B8C3E');
+  groundGrad.addColorStop(0.3, '#4A7830');
+  groundGrad.addColorStop(1, '#3A5A22');
+  ctx.fillStyle = groundGrad;
+  ctx.fillRect(0, height * 0.6, width, height * 0.4);
+
+  // 随机方块纹理
+  const blockSize = 16;
+  for (let x = 0; x < width; x += blockSize) {
+    for (let y = Math.floor(height * 0.6); y < height; y += blockSize) {
+      if (Math.random() > 0.7) {
+        const shade = Math.random() * 20 - 10;
+        const r = Math.max(0, Math.min(255, 91 + shade));
+        const g = Math.max(0, Math.min(255, 140 + shade));
+        const b = Math.max(0, Math.min(255, 62 + shade));
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(x, y, blockSize - 1, blockSize - 1);
+      }
+    }
+  }
+
+  // 随机树木
+  const treeCount = Math.floor(Math.random() * 3) + 1;
+  for (let i = 0; i < treeCount; i++) {
+    const tx = Math.random() * (width - 80) + 20;
+    const ty = height * 0.6 - 10;
+    // 树干
+    ctx.fillStyle = '#6B4226';
+    ctx.fillRect(tx + 4, ty - 30, 8, 30);
+    // 树冠
+    ctx.fillStyle = '#2D8C2D';
+    ctx.fillRect(tx - 6, ty - 50, 28, 24);
+    ctx.fillStyle = '#3AA03A';
+    ctx.fillRect(tx - 2, ty - 56, 20, 12);
+  }
+
+  // 随机云
+  for (let i = 0; i < 3; i++) {
+    const cx = Math.random() * width;
+    const cy = Math.random() * height * 0.25 + 20;
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 40, 15, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx + 25, cy - 5, 30, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 太阳或月亮
+  if (Math.random() > 0.5) {
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.arc(width * 0.8, height * 0.15, 20, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.fillStyle = '#E8E8E8';
+    ctx.beginPath();
+    ctx.arc(width * 0.2, height * 0.12, 16, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  return canvas.toDataURL('image/png');
+}
+
 export function useDemoAgent() {
   const [agentConfigs, setAgentConfigs] = useState<Map<string, DemoAgentConfig>>(new Map());
   const [intervals, setIntervals] = useState<Map<string, ReturnType<typeof setInterval>>>(new Map());
@@ -252,6 +374,18 @@ export function useDemoAgent() {
       let health = 20;
       let food = 18;
       let yaw = 180;
+      // 建造状态
+      let currentBuild: {
+        buildId: string;
+        blueprintName: string;
+        status: 'started' | 'in_progress' | 'completed' | 'failed';
+        progress: number;
+        currentLayer: number;
+        totalLayers: number;
+        blocksPlaced: number;
+        blocksTotal: number;
+        startedAt: number;
+      } | null = null;
 
       const updateInterval = setInterval(() => {
         const currentWs = agentWsMap.current.get(agentId);
@@ -329,6 +463,105 @@ export function useDemoAgent() {
               },
             },
           }));
+        }
+
+        // === 建造进度 (约每 30 秒新建/更新一次) ===
+        if (!currentBuild && Math.random() > 0.85) {
+          // 开始新建造
+          const blueprint = DEMO_BLUEPRINTS[Math.floor(Math.random() * DEMO_BLUEPRINTS.length)];
+          currentBuild = {
+            buildId: `build-${agentId}-${Date.now()}`,
+            blueprintName: blueprint.name,
+            status: 'started',
+            progress: 0,
+            currentLayer: 0,
+            totalLayers: blueprint.totalLayers,
+            blocksPlaced: 0,
+            blocksTotal: blueprint.blocksTotal,
+            startedAt: Date.now(),
+          };
+          currentWs.send(JSON.stringify({
+            type: 'agent:build:progress',
+            payload: { agentId, build: currentBuild },
+          }));
+        } else if (currentBuild && currentBuild.status !== 'completed' && currentBuild.status !== 'failed') {
+          // 更新建造进度
+          const increment = Math.random() * 0.15 + 0.03;
+          currentBuild.progress = Math.min(1, currentBuild.progress + increment);
+          currentBuild.blocksPlaced = Math.floor(currentBuild.blocksTotal * currentBuild.progress);
+          currentBuild.currentLayer = Math.floor(currentBuild.totalLayers * currentBuild.progress);
+
+          if (currentBuild.progress >= 1) {
+            currentBuild.status = 'completed';
+            currentBuild.progress = 1;
+            currentBuild.blocksPlaced = currentBuild.blocksTotal;
+            currentBuild.currentLayer = currentBuild.totalLayers;
+          } else {
+            currentBuild.status = 'in_progress';
+          }
+
+          // 10% 概率建造失败
+          if (Math.random() > 0.9 && currentBuild.progress < 0.5) {
+            currentBuild.status = 'failed';
+          }
+
+          currentWs.send(JSON.stringify({
+            type: 'agent:build:progress',
+            payload: { agentId, build: currentBuild },
+          }));
+
+          // 建造完成或失败后清空，下次循环可能新建
+          if (currentBuild.status === 'completed' || currentBuild.status === 'failed') {
+            currentBuild = null;
+          }
+        }
+
+        // === 聊天消息 (约每 15 秒发一次) ===
+        if (Math.random() > 0.87) {
+          const chatMsg = DEMO_CHAT_MESSAGES[Math.floor(Math.random() * DEMO_CHAT_MESSAGES.length)];
+          currentWs.send(JSON.stringify({
+            type: 'agent:chat',
+            payload: {
+              agentId,
+              message: {
+                messageId: `msg-${agentId}-${Date.now()}`,
+                content: chatMsg.content,
+                channel: chatMsg.channel,
+                recipient: chatMsg.channel === 'whisper' ? 'Steve' : undefined,
+                sender: { agentId, username: config.username, type: 'agent' as const },
+                timestamp: Date.now(),
+              },
+            },
+          }));
+        }
+
+        // === 截图上报 (约每 40 秒发一次) ===
+        if (Math.random() > 0.95) {
+          const scene = DEMO_VISION_SCENES[Math.floor(Math.random() * DEMO_VISION_SCENES.length)];
+          const imageData = generateDemoScreenshot(320, 180);
+          if (imageData) {
+            currentWs.send(JSON.stringify({
+              type: 'agent:vision',
+              payload: {
+                agentId,
+                vision: {
+                  captureId: `capture-${agentId}-${Date.now()}`,
+                  imageData,
+                  dimensions: { width: 320, height: 180 },
+                  position: currentPos,
+                  facing: { yaw, pitch: 0 },
+                  description: scene.description,
+                  scene: {
+                    biome: scene.biome,
+                    timeOfDay: scene.timeOfDay,
+                    weather: scene.weather,
+                    dimension: 'overworld',
+                  },
+                  timestamp: Date.now(),
+                },
+              },
+            }));
+          }
         }
       }, 2000);
 
