@@ -767,7 +767,7 @@ export function AddDemoAgentDialog() {
           <Button variant="outline" onClick={() => setIsOpen(false)}>
             取消
           </Button>
-          <Button onClick={handleAdd} disabled={!username.trim() || !isConnected}>
+          <Button onClick={handleAdd} disabled={!username.trim()}>
             启动
           </Button>
         </DialogFooter>
