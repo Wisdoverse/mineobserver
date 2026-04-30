@@ -5,6 +5,7 @@ import { createWsConnection, type WsMessage } from '@/lib/ws-client';
 import type {
   AgentStatus,
   AgentEvent,
+  EventType,
   WorldSnapshot,
   VisionRecord,
   BuildRecord,
@@ -224,6 +225,61 @@ export function useAgentObserver(): UseAgentObserverReturn {
           type: 'observer:register',
           payload: {},
         });
+
+        // Load historical data from REST API
+        (async () => {
+          try {
+            const [eventsRes, messagesRes] = await Promise.all([
+              fetch('/api/events?limit=50'),
+              fetch('/api/messages?limit=50'),
+            ]);
+            const eventsData = await eventsRes.json();
+            const messagesData = await messagesRes.json();
+
+            if (eventsData.success && Array.isArray(eventsData.data)) {
+              setEvents((prev) => {
+                const next = new Map(prev);
+                for (const e of eventsData.data as { id: number; agent_id: string; event_type: string; description: string; event_data: Record<string, unknown>; created_at: string }[]) {
+                  const event: AgentEvent = {
+                    id: String(e.id),
+                    agentId: e.agent_id,
+                    type: e.event_type as EventType,
+                    description: e.description,
+                    data: e.event_data,
+                    timestamp: new Date(e.created_at).getTime(),
+                  };
+                  const list = next.get(e.agent_id) || [];
+                  if (!list.some((ex) => ex.id === String(e.id))) {
+                    list.unshift(event);
+                    next.set(e.agent_id, list.slice(0, 50));
+                  }
+                }
+                return next;
+              });
+            }
+
+            if (messagesData.success && Array.isArray(messagesData.data)) {
+              setChatMessages((prev) => {
+                const existingIds = new Set(prev.map((m) => m.messageId));
+                const newMsgs = messagesData.data
+                  .filter((m: { message_id: string }) => !existingIds.has(m.message_id))
+                  .map((m: { message_id: string; agent_id: string; content: string; channel: string; recipient: string | null; sender: { agentId: string; username: string; type: string }; mentioned_agents: { agentId: string; username: string }[] | null; created_at: string }) => ({
+                    messageId: m.message_id,
+                    agentId: m.agent_id,
+                    content: m.content,
+                    channel: m.channel,
+                    recipient: m.recipient || undefined,
+                    sender: m.sender as { agentId: string; username: string; type: 'agent' | 'player' },
+                    mentionedAgents: m.mentioned_agents || undefined,
+                    timestamp: new Date(m.created_at).getTime(),
+                  }));
+                return [...prev, ...newMsgs].sort((a, b) => b.timestamp - a.timestamp).slice(0, 50);
+              });
+            }
+          } catch (err) {
+            console.error('[Observer] Failed to load history:', err);
+          }
+        })();
       },
       onClose: () => {
         console.log('[Observer] Disconnected');

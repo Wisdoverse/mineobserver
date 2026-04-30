@@ -150,8 +150,7 @@ export const agentDb = {
       .from('agent_world_snapshots')
       .insert({
         agent_id: snapshot.agent_id,
-        blocks: snapshot.blocks,
-        entities: snapshot.entities,
+        snapshot_data: { blocks: snapshot.blocks, entities: snapshot.entities },
       })
       .select()
       .single();
