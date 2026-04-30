@@ -1,5 +1,5 @@
 import { createServer } from 'http';
-import { parse } from 'url';
+import { parse as parseUrl } from 'url';
 import next from 'next';
 import { WebSocketServer } from 'ws';
 import type { IncomingMessage } from 'http';
@@ -51,7 +51,8 @@ app.prepare().then(async () => {
 
   const server = createServer(async (req, res) => {
     try {
-      const parsedUrl = parse(req.url!, true);
+      // url.parse() is deprecated in Node 24 but Next.js handle() requires UrlWithParsedQuery format
+      const parsedUrl = parseUrl(req.url!, true);
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error('Error occurred handling', req.url, err);
