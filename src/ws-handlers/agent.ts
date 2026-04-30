@@ -241,12 +241,12 @@ export function setupAgentHandler(wss: WebSocketServer) {
                 vision.thumbnailData,
               );
 
-              // 存入数据库
+              // 存入数据库（使用 imageKey 而非签名 URL）
               await agentDb.insertVision({
                 agent_id: agentId,
                 capture_id: vision.captureId,
-                image_url: uploadResult.imageUrl,
-                thumbnail_url: uploadResult.thumbnailUrl,
+                image_key: uploadResult.imageKey,
+                thumbnail_key: uploadResult.thumbnailKey,
                 dimensions: vision.dimensions,
                 position: vision.position,
                 facing: vision.facing,
@@ -256,13 +256,18 @@ export function setupAgentHandler(wss: WebSocketServer) {
               });
               agentDb.cleanupOldVision(agentId).catch((err: Error) => console.error('清理旧截图失败:', err));
 
+              // 生成代理 URL 用于广播
+              const proxyBaseUrl = `http://localhost:${process.env.PORT || 5000}`;
+              const visionProxyUrl = `${proxyBaseUrl}/api/vision-proxy?key=${encodeURIComponent(uploadResult.imageKey)}`;
+              const thumbProxyUrl = uploadResult.thumbnailKey ? `${proxyBaseUrl}/api/vision-proxy?key=${encodeURIComponent(uploadResult.thumbnailKey)}` : undefined;
+
               // 添加截图事件
               const visionEvent = agentStateManager.addEvent(
                 agentId,
                 createAgentEvent(agentId, 'vision_captured', `截图: ${vision.description || vision.captureId}`, {
                   captureId: vision.captureId,
-                  imageUrl: uploadResult.imageUrl,
-                  thumbnailUrl: uploadResult.thumbnailUrl,
+                  imageUrl: visionProxyUrl,
+                  thumbnailUrl: thumbProxyUrl,
                 })
               );
 
@@ -273,8 +278,8 @@ export function setupAgentHandler(wss: WebSocketServer) {
                   agentId,
                   vision: {
                     captureId: vision.captureId,
-                    imageUrl: uploadResult.imageUrl,
-                    thumbnailUrl: uploadResult.thumbnailUrl,
+                    imageUrl: visionProxyUrl,
+                    thumbnailUrl: thumbProxyUrl,
                     dimensions: vision.dimensions,
                     position: vision.position,
                     description: vision.description,
@@ -291,7 +296,7 @@ export function setupAgentHandler(wss: WebSocketServer) {
               // ACK
               ws.send(JSON.stringify({
                 type: 'agent:vision:ack',
-                payload: { success: true, captureId: vision.captureId, imageUrl: uploadResult.imageUrl },
+                payload: { success: true, captureId: vision.captureId, imageUrl: visionProxyUrl },
               }));
             } catch (err) {
               console.error('处理截图上传失败:', err);

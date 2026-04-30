@@ -7,6 +7,7 @@ import type { Duplex } from 'stream';
 
 import { setupAgentHandler } from './ws-handlers/agent';
 import { agentStateManager } from './ws-handlers/agent-state';
+import { getVisionUrl } from './storage/vision-storage';
 
 const dev = process.env.COZE_PROJECT_ENV !== 'PROD';
 const hostname = process.env.HOSTNAME || 'localhost';
@@ -51,8 +52,28 @@ app.prepare().then(async () => {
 
   const server = createServer(async (req, res) => {
     try {
-      // url.parse() is deprecated in Node 24 but Next.js handle() requires UrlWithParsedQuery format
       const parsedUrl = parseUrl(req.url!, true);
+      
+      // Vision proxy: 动态生成签名 URL 并重定向
+      if (parsedUrl.pathname === '/api/vision-proxy') {
+        const key = parsedUrl.query.key as string;
+        if (!key) {
+          res.statusCode = 400;
+          res.end(JSON.stringify({ error: 'Missing key parameter' }));
+          return;
+        }
+        try {
+          const signedUrl = await getVisionUrl(key);
+          res.writeHead(302, { Location: signedUrl });
+          res.end();
+        } catch (err) {
+          console.error('Vision proxy error:', err);
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: 'Failed to generate signed URL' }));
+        }
+        return;
+      }
+      
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error('Error occurred handling', req.url, err);

@@ -259,8 +259,8 @@ export const agentDb = {
   insertVision: async (vision: {
     agent_id: string;
     capture_id: string;
-    image_url: string;
-    thumbnail_url?: string;
+    image_key: string;
+    thumbnail_key?: string;
     dimensions: { width: number; height: number };
     position: { x: number; y: number; z: number };
     facing?: { yaw: number; pitch: number };
@@ -274,8 +274,10 @@ export const agentDb = {
       .insert({
         agent_id: vision.agent_id,
         capture_id: vision.capture_id,
-        image_url: vision.image_url,
-        thumbnail_url: vision.thumbnail_url || null,
+        image_key: vision.image_key,
+        thumbnail_key: vision.thumbnail_key || null,
+        image_url: vision.image_key,
+        thumbnail_url: vision.thumbnail_key || null,
         dimensions: vision.dimensions,
         position: vision.position,
         facing: vision.facing || null,
