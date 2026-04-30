@@ -87,6 +87,11 @@ class AgentStateManager {
     // 异步持久化
     this.persistAgent(agentId);
 
+    // 异步持久化轨迹数据（每次状态更新记录位置，用于轨迹回放）
+    if (update.position) {
+      this.persistStatusUpdate(agentId, agent.status);
+    }
+
     return agent.status;
   }
 
@@ -234,6 +239,8 @@ class AgentStateManager {
     }
   }
 
+  private persistCounters = { events: 0, snapshots: 0, statusUpdates: 0 };
+
   private async persistEvent(agentId: string, event: AgentEvent) {
     try {
       await agentDb.insertEvent({
@@ -242,6 +249,10 @@ class AgentStateManager {
         description: event.description,
         event_data: event.data,
       });
+      this.persistCounters.events++;
+      if (this.persistCounters.events % 50 === 0) {
+        agentDb.cleanupOldEvents(agentId, 200).catch(() => {});
+      }
     } catch (error) {
       console.error(`持久化事件失败:`, error);
       // 外键约束失败时，尝试先 upsert Agent
@@ -268,8 +279,30 @@ class AgentStateManager {
         blocks: snapshot.blocks,
         entities: snapshot.entities,
       });
+      this.persistCounters.snapshots++;
+      if (this.persistCounters.snapshots % 10 === 0) {
+        agentDb.cleanupOldSnapshots(agentId, 30).catch(() => {});
+      }
     } catch (error) {
       console.error(`持久化世界快照失败:`, error);
+    }
+  }
+
+  private async persistStatusUpdate(agentId: string, status: AgentStatus) {
+    try {
+      await agentDb.insertStatusUpdate({
+        agent_id: agentId,
+        position: status.position,
+        health: status.health,
+        food: status.food,
+        dimension: status.dimension,
+      });
+      this.persistCounters.statusUpdates++;
+      if (this.persistCounters.statusUpdates % 100 === 0) {
+        agentDb.cleanupOldStatusUpdates(agentId, 1000).catch(() => {});
+      }
+    } catch (error) {
+      console.error(`持久化状态更新失败:`, error);
     }
   }
 }

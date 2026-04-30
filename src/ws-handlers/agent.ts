@@ -186,6 +186,9 @@ export function setupAgentHandler(wss: WebSocketServer) {
               agentClients.delete(agentId);
               clientAgentId = null;
 
+              // 主动关闭 WebSocket 连接
+              try { ws.close(); } catch (_e) { /* ignore */ }
+
               console.log(`Agent ${agentId} 主动断开: ${reason || 'no reason'}`);
             }
             break;
@@ -251,6 +254,7 @@ export function setupAgentHandler(wss: WebSocketServer) {
                 scene_info: vision.scene as Record<string, unknown> | undefined,
                 size_bytes: uploadResult.sizeBytes,
               });
+              agentDb.cleanupOldVision(agentId).catch((err: Error) => console.error('清理旧截图失败:', err));
 
               // 添加截图事件
               const visionEvent = agentStateManager.addEvent(
@@ -322,6 +326,7 @@ export function setupAgentHandler(wss: WebSocketServer) {
                   : undefined,
                 errors: build.errors,
               });
+              agentDb.cleanupOldBuilds(agentId).catch((err: Error) => console.error('清理旧建造记录失败:', err));
 
               // 广播给观测者
               broadcastToObservers({
@@ -481,7 +486,7 @@ export function setupAgentHandler(wss: WebSocketServer) {
                 agentId,
                 createAgentEvent(
                   agentId,
-                  message.channel === 'whisper' ? 'chat_sent' : 'chat_sent',
+                  message.channel === 'whisper' ? 'chat_sent' : 'chat_received',
                   `[${message.channel}] ${message.sender.username}: ${message.content}`,
                   { channel: message.channel, recipient: message.recipient }
                 )

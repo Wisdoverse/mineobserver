@@ -9,40 +9,61 @@ export async function POST(request: Request) {
     const { getSupabaseClient } = await import("@/storage/database/supabase-client");
     const supabase = getSupabaseClient();
 
-    if (scope === "events") {
-      // 只清空事件和快照，保留 Agent
-      const [eventsRes, snapshotsRes] = await Promise.all([
-        supabase.from("agent_events").delete().gte("id", 0),
-        supabase.from("agent_world_snapshots").delete().gte("id", 0),
-      ]);
+    // 需要清理的事件类表（有 agent_id 外键，需在 agents 之前删除）
+    const eventTables = [
+      "agent_events",
+      "agent_world_snapshots",
+      "agent_vision",
+      "agent_messages",
+      "agent_status_updates",
+      "agent_builds",
+      "agent_subscriptions",
+    ];
 
-      if (eventsRes.error || snapshotsRes.error) {
+    if (scope === "events") {
+      // 只清空事件和相关数据，保留 Agent
+      const results = await Promise.all(
+        eventTables.map((table) => supabase.from(table).delete().gte("id", 0))
+      );
+
+      const firstError = results.find((r) => r.error);
+      if (firstError?.error) {
         return NextResponse.json(
-          { error: `清理失败: ${eventsRes.error?.message || snapshotsRes.error?.message}` },
+          { error: `清理失败: ${firstError.error.message}` },
           { status: 500 }
         );
       }
 
       return NextResponse.json({
         success: true,
-        message: "已清空所有事件和快照数据",
+        message: "已清空所有事件、快照、截图、消息等数据（Agent 保留）",
       });
     }
 
     if (scope === "all") {
-      // 1. 清空数据库
-      const [eventsRes, snapshotsRes] = await Promise.all([
-        supabase.from("agent_events").delete().gte("id", 0),
-        supabase.from("agent_world_snapshots").delete().gte("id", 0),
-      ]);
+      // 1. 先清空事件类表（有外键依赖）
+      const eventResults = await Promise.all(
+        eventTables.map((table) => supabase.from(table).delete().gte("id", 0))
+      );
 
-      if (eventsRes.error || snapshotsRes.error) {
+      const firstEventError = eventResults.find((r) => r.error);
+      if (firstEventError?.error) {
         return NextResponse.json(
-          { error: `清理事件/快照失败: ${eventsRes.error?.message || snapshotsRes.error?.message}` },
+          { error: `清理事件数据失败: ${firstEventError.error.message}` },
           { status: 500 }
         );
       }
 
+      // 2. 清空团队表（有外键依赖 agents）
+      const teamRes = await supabase.from("agent_teams").delete().gte("id", 0);
+      if (teamRes.error) {
+        return NextResponse.json(
+          { error: `清理团队失败: ${teamRes.error.message}` },
+          { status: 500 }
+        );
+      }
+
+      // 3. 清空 Agent 表
       const agentsRes = await supabase.from("agents").delete().gte("id", 0);
       if (agentsRes.error) {
         return NextResponse.json(
@@ -51,7 +72,7 @@ export async function POST(request: Request) {
         );
       }
 
-      // 2. 清空 WebSocket 服务端内存中的 Agent
+      // 4. 清空 WebSocket 服务端内存中的 Agent
       try {
         const wsUrl = `ws://localhost:${process.env.DEPLOY_RUN_PORT || 5000}/ws/agent`;
         const WebSocket = (await import("ws")).default;
@@ -88,7 +109,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: "已清空所有数据（Agent、事件、快照）并同步清除内存缓存",
+        message: "已清空所有数据（Agent、事件、快照、截图、消息、建造、团队等）并同步清除内存缓存",
       });
     }
 

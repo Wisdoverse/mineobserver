@@ -400,6 +400,21 @@ export const agentDb = {
     return data as BuildRecord[];
   },
 
+  cleanupOldBuilds: async (agentId: string, keepCount: number = 20) => {
+    const client = getSupabaseClient();
+    const { data } = await client
+      .from('agent_builds')
+      .select('id')
+      .eq('agent_id', agentId)
+      .order('updated_at', { ascending: false })
+      .range(keepCount, keepCount + 99);
+
+    if (data && data.length > 0) {
+      const idsToDelete = data.map((r: { id: number }) => r.id);
+      await client.from('agent_builds').delete().in('id', idsToDelete);
+    }
+  },
+
   // --- Subscription 事件订阅 ---
   upsertSubscription: async (sub: {
     agent_id: string;
@@ -517,6 +532,21 @@ export const agentDb = {
     return data;
   },
 
+  cleanupOldMessages: async (agentId: string, keepCount: number = 100) => {
+    const client = getSupabaseClient();
+    const { data } = await client
+      .from('agent_messages')
+      .select('id')
+      .eq('agent_id', agentId)
+      .order('created_at', { ascending: false })
+      .range(keepCount, keepCount + 99);
+
+    if (data && data.length > 0) {
+      const idsToDelete = data.map((r: { id: number }) => r.id);
+      await client.from('agent_messages').delete().in('id', idsToDelete);
+    }
+  },
+
   getAgentMessages: async (agentId: string, limit: number = 50) => {
     const client = getSupabaseClient();
     const { data, error } = await client
@@ -547,34 +577,7 @@ export const agentDb = {
     return data as ChatMessageRecord[];
   },
 
-  cleanupOldMessages: async (agentId: string, keepCount: number = 100) => {
-    const client = getSupabaseClient();
-    const { data: toKeep, error: fetchError } = await client
-      .from('agent_messages')
-      .select('id')
-      .eq('agent_id', agentId)
-      .order('created_at', { ascending: false })
-      .limit(keepCount);
 
-    if (fetchError) throw new Error(`获取要保留的消息失败: ${fetchError.message}`);
-    if (!toKeep || toKeep.length === 0) return;
-
-    const keepIds = toKeep.map((s: { id: number }) => s.id);
-    const { data: all, error: allError } = await client
-      .from('agent_messages')
-      .select('id')
-      .eq('agent_id', agentId);
-
-    if (allError) throw new Error(`获取所有消息失败: ${allError.message}`);
-    const idsToDelete = (all as { id: number }[]).map((s) => s.id).filter((id) => !keepIds.includes(id));
-    if (idsToDelete.length === 0) return;
-
-    for (let i = 0; i < idsToDelete.length; i += 100) {
-      const batch = idsToDelete.slice(i, i + 100);
-      const { error } = await client.from('agent_messages').delete().in('id', batch);
-      if (error) throw new Error(`清理旧消息失败: ${error.message}`);
-    }
-  },
 
   // --- Status Updates 轨迹 ---
   insertStatusUpdate: async (update: {
@@ -590,9 +593,9 @@ export const agentDb = {
       .insert({
         agent_id: update.agent_id,
         position: update.position,
-        health: update.health || null,
-        food: update.food || null,
-        dimension: update.dimension || null,
+        health: update.health ?? null,
+        food: update.food ?? null,
+        dimension: update.dimension ?? null,
       })
       .select()
       .single();
