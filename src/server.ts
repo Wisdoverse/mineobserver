@@ -54,7 +54,7 @@ app.prepare().then(async () => {
     try {
       const parsedUrl = parseUrl(req.url!, true);
       
-      // Vision proxy: 动态生成签名 URL 并重定向
+      // Vision proxy: 服务端代理获取图片并流式返回（避免 iframe 302 重定向跨域问题）
       if (parsedUrl.pathname === '/api/vision-proxy') {
         const key = parsedUrl.query.key as string;
         if (!key) {
@@ -64,12 +64,48 @@ app.prepare().then(async () => {
         }
         try {
           const signedUrl = await getVisionUrl(key);
-          res.writeHead(302, { Location: signedUrl });
-          res.end();
+          // 服务端获取图片数据并流式返回
+          const imageRes = await fetch(signedUrl);
+          if (!imageRes.ok) {
+            console.error(`Vision proxy: upstream ${imageRes.status} for key=${key}`);
+            res.statusCode = imageRes.status;
+            res.end(JSON.stringify({ error: `Upstream returned ${imageRes.status}` }));
+            return;
+          }
+          // 透传 Content-Type 和缓存头
+          const contentType = imageRes.headers.get('content-type') || 'image/png';
+          const contentLength = imageRes.headers.get('content-length');
+          const headers: Record<string, string> = {
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=3600',
+          };
+          if (contentLength) headers['Content-Length'] = contentLength;
+          res.writeHead(200, headers);
+          if (imageRes.body) {
+            const reader = imageRes.body.getReader();
+            const pump = async () => {
+              try {
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  res.write(value);
+                }
+              } catch (streamErr) {
+                console.error('Vision proxy stream error:', streamErr);
+              } finally {
+                res.end();
+              }
+            };
+            await pump();
+          } else {
+            // fallback: 无 stream body 时用 arrayBuffer
+            const buf = Buffer.from(await imageRes.arrayBuffer());
+            res.end(buf);
+          }
         } catch (err) {
           console.error('Vision proxy error:', err);
           res.statusCode = 500;
-          res.end(JSON.stringify({ error: 'Failed to generate signed URL' }));
+          res.end(JSON.stringify({ error: 'Failed to proxy vision image' }));
         }
         return;
       }

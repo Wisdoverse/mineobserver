@@ -256,10 +256,9 @@ export function setupAgentHandler(wss: WebSocketServer) {
               });
               agentDb.cleanupOldVision(agentId).catch((err: Error) => console.error('清理旧截图失败:', err));
 
-              // 生成代理 URL 用于广播
-              const proxyBaseUrl = `http://localhost:${process.env.PORT || 5000}`;
-              const visionProxyUrl = `${proxyBaseUrl}/api/vision-proxy?key=${encodeURIComponent(uploadResult.imageKey)}`;
-              const thumbProxyUrl = uploadResult.thumbnailKey ? `${proxyBaseUrl}/api/vision-proxy?key=${encodeURIComponent(uploadResult.thumbnailKey)}` : undefined;
+              // 生成代理 URL 用于广播（使用相对路径，兼容任意域名访问）
+              const visionProxyUrl = `/api/vision-proxy?key=${encodeURIComponent(uploadResult.imageKey)}`;
+              const thumbProxyUrl = uploadResult.thumbnailKey ? `/api/vision-proxy?key=${encodeURIComponent(uploadResult.thumbnailKey)}` : undefined;
 
               // 添加截图事件
               const visionEvent = agentStateManager.addEvent(
