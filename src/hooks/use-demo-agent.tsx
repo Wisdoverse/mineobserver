@@ -213,7 +213,9 @@ function generateDemoScreenshot(width: number, height: number): string {
     ctx.fill();
   }
 
-  return canvas.toDataURL('image/png');
+  // 返回纯 Base64（不含 data:image/png;base64, 前缀）
+  const dataUrl = canvas.toDataURL('image/png');
+  return dataUrl.replace(/^data:image\/\w+;base64,/, '');
 }
 
 export function useDemoAgent() {
@@ -387,6 +389,14 @@ export function useDemoAgent() {
         startedAt: number;
       } | null = null;
 
+      // 演示数据计数器（限制总量，避免页面爆炸）
+      let visionCount = 0;
+      let chatCount = 0;
+      let buildCount = 0;
+      const MAX_DEMO_VISIONS = 8;
+      const MAX_DEMO_CHATS = 30;
+      const MAX_DEMO_BUILDS = 5;
+
       const updateInterval = setInterval(() => {
         const currentWs = agentWsMap.current.get(agentId);
         if (!currentWs || currentWs.readyState !== WebSocket.OPEN) {
@@ -466,7 +476,7 @@ export function useDemoAgent() {
         }
 
         // === 建造进度 (约每 30 秒新建/更新一次) ===
-        if (!currentBuild && Math.random() > 0.85) {
+        if (!currentBuild && Math.random() > 0.85 && buildCount < MAX_DEMO_BUILDS) {
           // 开始新建造
           const blueprint = DEMO_BLUEPRINTS[Math.floor(Math.random() * DEMO_BLUEPRINTS.length)];
           currentBuild = {
@@ -480,6 +490,7 @@ export function useDemoAgent() {
             blocksTotal: blueprint.blocksTotal,
             startedAt: Date.now(),
           };
+          buildCount++;
           currentWs.send(JSON.stringify({
             type: 'agent:build:progress',
             payload: { agentId, build: currentBuild },
@@ -517,8 +528,9 @@ export function useDemoAgent() {
         }
 
         // === 聊天消息 (约每 15 秒发一次) ===
-        if (Math.random() > 0.87) {
+        if (Math.random() > 0.87 && chatCount < MAX_DEMO_CHATS) {
           const chatMsg = DEMO_CHAT_MESSAGES[Math.floor(Math.random() * DEMO_CHAT_MESSAGES.length)];
+          chatCount++;
           currentWs.send(JSON.stringify({
             type: 'agent:chat',
             payload: {
@@ -536,10 +548,11 @@ export function useDemoAgent() {
         }
 
         // === 截图上报 (约每 40 秒发一次) ===
-        if (Math.random() > 0.95) {
+        if (Math.random() > 0.95 && visionCount < MAX_DEMO_VISIONS) {
           const scene = DEMO_VISION_SCENES[Math.floor(Math.random() * DEMO_VISION_SCENES.length)];
           const imageData = generateDemoScreenshot(320, 180);
           if (imageData) {
+            visionCount++;
             currentWs.send(JSON.stringify({
               type: 'agent:vision',
               payload: {
