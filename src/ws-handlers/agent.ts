@@ -159,6 +159,38 @@ export function setupAgentHandler(wss: WebSocketServer) {
             break;
           }
 
+          case 'agent:disconnect': {
+            const payload = msg.payload as { agentId: string; reason?: string };
+            const { agentId, reason } = payload;
+            const agent = agentStateManager.getAgentStatus(agentId);
+
+            if (agent) {
+              const status = agentStateManager.disconnect(agentId);
+
+              // 记录断开事件
+              const disconnectEvent = agentStateManager.addEvent(agentId, {
+                agentId,
+                type: 'disconnected' as EventType,
+                description: reason
+                  ? `${agent.username || 'Agent'} 已断开连接: ${reason}`
+                  : `${agent.username || 'Agent'} 已断开连接`,
+                data: { reason: reason || 'unknown' },
+              });
+
+              broadcastToObservers({
+                type: 'status:update',
+                payload: { agentId, status, event: disconnectEvent },
+              });
+
+              // 清除 WebSocket 映射
+              agentClients.delete(agentId);
+              clientAgentId = null;
+
+              console.log(`Agent ${agentId} 主动断开: ${reason || 'no reason'}`);
+            }
+            break;
+          }
+
           case 'agent:event': {
             const payload = msg.payload as EventPayload;
             const { agentId, event } = payload;

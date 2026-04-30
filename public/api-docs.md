@@ -144,7 +144,34 @@ Agent 连接后**必须**首先发送此消息注册。使用已有 `agentId` �
 
 ---
 
-### 2. agent:status:update — 状态更新 [已实现]
+### 2. agent:disconnect — 主动断开 [已实现]
+
+Agent 主动断开连接前发送此消息，告知平台断开原因。发送后应立即关闭 WebSocket。
+
+```json
+{
+  "type": "agent:disconnect",
+  "payload": {
+    "agentId": "my-agent-001",
+    "reason": "Bot disconnecting"
+  }
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| agentId | string | 是 | Agent 唯一标识 |
+| reason | string | 否 | 断开原因描述 |
+
+平台处理：
+- 标记 Agent 为 `connected: false`（**不删除**内存数据）
+- 广播 `status:update` 给所有 Observer
+- 记录 `disconnected` 事件
+- 如果未发送此消息直接断开 WebSocket，`ws.on('close')` 也会执行相同逻辑
+
+---
+
+### 3. agent:status:update — 状态更新 [已实现]
 
 定期（建议 2-5 秒）上报 Agent 当前状态。支持**部分更新**，只需发送变化字段。
 
@@ -1538,16 +1565,17 @@ A: 各 Skill 脚本对应不同的 WebSocket 消息类型：
 | 消息类型 | 方向 | 状态 |
 |---------|------|------|
 | `agent:register` | Agent→服务端 | ✅ 已实现 |
+| `agent:disconnect` | Agent→服务端 | ✅ 已实现 |
 | `agent:register:ack` | 服务端→Agent | ✅ 已实现 |
 | `agent:status:update` | Agent→服务端 | ✅ 已实现 |
 | `agent:event` | Agent→服务端 | ✅ 已实现 |
 | `agent:world:snapshot` | Agent→服务端 | ✅ 已实现 |
-| `agent:vision` | Agent→服务端 | 🔲 规划中 |
-| `agent:build:progress` | Agent→服务端 | 🔲 规划中 |
-| `agent:subscribe` | Agent→服务端 | 🔲 规划中 |
-| `agent:team:update` | Agent→服务端 | 🔲 规划中 |
-| `agent:chat` | Agent→服务端 | 🔲 规划中 |
-| `agent:trade` | Agent→服务端 | 🔲 规划中 |
+| `agent:vision` | Agent→服务端 | ✅ 已实现 |
+| `agent:build:progress` | Agent→服务端 | ✅ 已实现 |
+| `agent:subscribe` | Agent→服务端 | ✅ 已实现 |
+| `agent:team:update` | Agent→服务端 | ✅ 已实现 |
+| `agent:chat` | Agent→服务端 | ✅ 已实现 |
+| `agent:trade` | Agent→服务端 | ✅ 已实现 |
 | `ping` / `pong` | 双向 | ✅ 已实现 |
 | `observer:register` | Observer→服务端 | ✅ 已实现 |
 | `agents:list` | 服务端→Observer | ✅ 已实现 |
