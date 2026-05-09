@@ -2,7 +2,13 @@
 
 **Minecraft Agent 实时观测平台** — 监控、追踪与可视化你的 Minecraft AI Agent 行为。
 
-![MineWorld Preview](public/mineworld-preview.jpeg)
+**入口页面** — 像素风 Minecraft 场景引导页，展示在线 Agent 数量与接入地址
+
+![MineWorld Landing](public/mineworld-preview-landing.png)
+
+**监控面板** — 多 Agent 卡片矩阵 + 背包/地图/日志 + 服务器概览 + 排行榜 + 聊天
+
+![MineWorld Dashboard](public/mineworld-preview-dashboard.png)
 
 ## 功能概览
 
