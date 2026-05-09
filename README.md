@@ -1,363 +1,192 @@
-# projects
+# MineWorld
 
-这是一个基于 [Next.js 16](https://nextjs.org) + [shadcn/ui](https://ui.shadcn.com) 的全栈应用项目，由扣子编程 CLI 创建。
+**Minecraft Agent 实时观测平台** — 监控、追踪与可视化你的 Minecraft AI Agent 行为。
+
+![MineWorld Preview](public/mineworld-preview.jpeg)
+
+## 功能概览
+
+- **实时状态监控** — 监控 Agent 位置、生命值、饥饿值、游戏模式等核心指标
+- **背包可视化** — 展示 Agent 的装备栏、热键栏和主背包内容
+- **小地图** — 显示 Agent 周围的方块和实体分布
+- **截图画廊** — 实时查看 Agent 上报的游戏截图
+- **建造进度** — 追踪 Agent 的建筑项目完成情况
+- **聊天窗口** — 展示公共/团队/私聊频道的实时消息
+- **事件日志** — 记录 Agent 的所有操作事件（移动、破坏方块、拾取物品等）
+- **多 Agent 支持** — 同时监控多个 Agent 的状态与行为
+- **统计排行** — 展示 Agent 的统计数据与排行榜
+
+## 技术栈
+
+| 类别 | 技术 |
+|------|------|
+| 框架 | Next.js 16 (App Router) |
+| 核心 | React 19 |
+| 语言 | TypeScript 5 |
+| UI 组件 | shadcn/ui (Radix UI) |
+| 样式 | Tailwind CSS 4 |
+| 实时通信 | WebSocket (ws) |
+| 数据库 | Supabase (PostgreSQL) |
+| 对象存储 | S3 兼容存储 (coze-coding-dev-sdk) |
 
 ## 快速开始
+
+### 环境要求
+
+- Node.js 20+
+- pnpm 9+
+
+### 安装依赖
+
+```bash
+pnpm install
+```
 
 ### 启动开发服务器
 
 ```bash
-coze dev
+pnpm dev
 ```
 
-启动后，在浏览器中打开 [http://localhost:5000](http://localhost:5000) 查看应用。
-
-开发服务器支持热更新，修改代码后页面会自动刷新。
+启动后打开 [http://localhost:5000](http://localhost:5000) 查看应用。
 
 ### 构建生产版本
 
 ```bash
-coze build
+pnpm build
 ```
 
 ### 启动生产服务器
 
 ```bash
-coze start
+pnpm start
 ```
 
 ## 项目结构
 
 ```
-src/
-├── app/                      # Next.js App Router 目录
-│   ├── layout.tsx           # 根布局组件
-│   ├── page.tsx             # 首页
-│   ├── globals.css          # 全局样式（包含 shadcn 主题变量）
-│   └── [route]/             # 其他路由页面
-├── components/              # React 组件目录
-│   └── ui/                  # shadcn/ui 基础组件（优先使用）
-│       ├── button.tsx
-│       ├── card.tsx
-│       └── ...
-├── lib/                     # 工具函数库
-│   └── utils.ts            # cn() 等工具函数
-└── hooks/                   # 自定义 React Hooks（可选）
-
-server/
-├── index.ts                 # 自定义服务器入口
-├── tsconfig.json           # Server TypeScript 配置
-└── dist/                    # 编译输出目录（自动生成）
+├── public/                 # 静态资源 & API 文档
+│   └── api-docs.md         # 完整接口文档
+├── scripts/                # 构建与启动脚本
+│   ├── build.sh
+│   ├── dev.sh
+│   └── start.sh
+├── src/
+│   ├── app/                # Next.js App Router
+│   │   ├── page.tsx        # 主页面
+│   │   ├── layout.tsx      # 根布局
+│   │   └── api/            # REST API 端点
+│   ├── components/
+│   │   ├── ui/             # shadcn/ui 组件库
+│   │   └── agent/          # Agent 观测组件
+│   │       ├── agent-card.tsx       # Agent 状态卡片
+│   │       ├── inventory-grid.tsx   # 背包网格
+│   │       ├── mini-map.tsx        # 小地图
+│   │       ├── vision-gallery.tsx   # 截图画廊
+│   │       ├── build-progress.tsx   # 建造进度
+│   │       ├── chat-window.tsx      # 聊天窗口
+│   │       ├── team-panel.tsx       # 团队面板
+│   │       └── stats-leaderboard.tsx # 统计排行
+│   ├── hooks/
+│   │   ├── use-agent-observer.ts    # Observer WebSocket Hook
+│   │   └── use-demo-agent.tsx       # Demo Agent Hook
+│   ├── lib/
+│   │   ├── utils.ts
+│   │   ├── types/agent.ts           # 类型定义
+│   │   └── ws-client.ts            # WebSocket 客户端
+│   ├── storage/
+│   │   ├── database/
+│   │   │   ├── agent-db.ts          # 数据库操作层
+│   │   │   └── supabase-client.ts   # Supabase 客户端
+│   │   └── vision-storage.ts        # 截图对象存储
+│   ├── ws-handlers/
+│   │   ├── agent.ts                 # WebSocket 消息处理器
+│   │   └── agent-state.ts           # Agent 状态管理器
+│   └── server.ts                    # 自定义服务端入口
+├── next.config.ts
+├── package.json
+└── tsconfig.json
 ```
 
-## 核心开发规范
-
-### 1. 组件开发
-
-**优先使用 shadcn/ui 基础组件**
-
-本项目已预装完整的 shadcn/ui 组件库，位于 `src/components/ui/` 目录。开发时应优先使用这些组件作为基础：
-
-```tsx
-// ✅ 推荐：使用 shadcn 基础组件
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-
-export default function MyComponent() {
-  return (
-    <Card>
-      <CardHeader>标题</CardHeader>
-      <CardContent>
-        <Input placeholder="输入内容" />
-        <Button>提交</Button>
-      </CardContent>
-    </Card>
-  );
-}
-```
-
-**可用的 shadcn 组件清单**
-
-- 表单：`button`, `input`, `textarea`, `select`, `checkbox`, `radio-group`, `switch`, `slider`
-- 布局：`card`, `separator`, `tabs`, `accordion`, `collapsible`, `scroll-area`
-- 反馈：`alert`, `alert-dialog`, `dialog`, `toast`, `sonner`, `progress`
-- 导航：`dropdown-menu`, `menubar`, `navigation-menu`, `context-menu`
-- 数据展示：`table`, `avatar`, `badge`, `hover-card`, `tooltip`, `popover`
-- 其他：`calendar`, `command`, `carousel`, `resizable`, `sidebar`
-
-详见 `src/components/ui/` 目录下的具体组件实现。
-
-### 2. 路由开发
-
-Next.js 使用文件系统路由，在 `src/app/` 目录下创建文件夹即可添加路由：
-
-```bash
-# 创建新路由 /about
-src/app/about/page.tsx
-
-# 创建动态路由 /posts/[id]
-src/app/posts/[id]/page.tsx
-
-# 创建路由组（不影响 URL）
-src/app/(marketing)/about/page.tsx
-
-# 创建 API 路由
-src/app/api/users/route.ts
-```
-
-**页面组件示例**
-
-```tsx
-// src/app/about/page.tsx
-import { Button } from '@/components/ui/button';
-
-export const metadata = {
-  title: '关于我们',
-  description: '关于页面描述',
-};
-
-export default function AboutPage() {
-  return (
-    <div>
-      <h1>关于我们</h1>
-      <Button>了解更多</Button>
-    </div>
-  );
-}
-```
-
-**动态路由示例**
-
-```tsx
-// src/app/posts/[id]/page.tsx
-export default async function PostPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-
-  return <div>文章 ID: {id}</div>;
-}
-```
-
-**API 路由示例**
-
-```tsx
-// src/app/api/users/route.ts
-import { NextResponse } from 'next/server';
-
-export async function GET() {
-  return NextResponse.json({ users: [] });
-}
-
-export async function POST(request: Request) {
-  const body = await request.json();
-  return NextResponse.json({ success: true });
-}
-```
-
-### 3. 依赖管理
-
-**必须使用 pnpm 管理依赖**
-
-```bash
-# ✅ 安装依赖
-pnpm install
-
-# ✅ 添加新依赖
-pnpm add package-name
-
-# ✅ 添加开发依赖
-pnpm add -D package-name
-
-# ❌ 禁止使用 npm 或 yarn
-# npm install  # 错误！
-# yarn add     # 错误！
-```
-
-项目已配置 `preinstall` 脚本，使用其他包管理器会报错。
-
-### 4. 样式开发
-
-**使用 Tailwind CSS v4**
-
-本项目使用 Tailwind CSS v4 进行样式开发，并已配置 shadcn 主题变量。
-
-```tsx
-// 使用 Tailwind 类名
-<div className="flex items-center gap-4 p-4 rounded-lg bg-background">
-  <Button className="bg-primary text-primary-foreground">
-    主要按钮
-  </Button>
-</div>
-
-// 使用 cn() 工具函数合并类名
-import { cn } from '@/lib/utils';
-
-<div className={cn(
-  "base-class",
-  condition && "conditional-class",
-  className
-)}>
-  内容
-</div>
-```
-
-**主题变量**
-
-主题变量定义在 `src/app/globals.css` 中，支持亮色/暗色模式：
-
-- `--background`, `--foreground`
-- `--primary`, `--primary-foreground`
-- `--secondary`, `--secondary-foreground`
-- `--muted`, `--muted-foreground`
-- `--accent`, `--accent-foreground`
-- `--destructive`, `--destructive-foreground`
-- `--border`, `--input`, `--ring`
-
-### 5. 表单开发
-
-推荐使用 `react-hook-form` + `zod` 进行表单开发：
-
-```tsx
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-
-const formSchema = z.object({
-  username: z.string().min(2, '用户名至少 2 个字符'),
-  email: z.string().email('请输入有效的邮箱'),
-});
-
-export default function MyForm() {
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: { username: '', email: '' },
-  });
-
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
-    console.log(data);
-  };
-
-  return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
-      <Input {...form.register('username')} />
-      <Input {...form.register('email')} />
-      <Button type="submit">提交</Button>
-    </form>
-  );
-}
-```
-
-### 6. 数据获取
-
-**服务端组件（推荐）**
-
-```tsx
-// src/app/posts/page.tsx
-async function getPosts() {
-  const res = await fetch('https://api.example.com/posts', {
-    cache: 'no-store', // 或 'force-cache'
-  });
-  return res.json();
-}
-
-export default async function PostsPage() {
-  const posts = await getPosts();
-
-  return (
-    <div>
-      {posts.map(post => (
-        <div key={post.id}>{post.title}</div>
-      ))}
-    </div>
-  );
-}
-```
-
-**客户端组件**
-
-```tsx
-'use client';
-
-import { useEffect, useState } from 'react';
-
-export default function ClientComponent() {
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    fetch('/api/data')
-      .then(res => res.json())
-      .then(setData);
-  }, []);
-
-  return <div>{JSON.stringify(data)}</div>;
-}
-```
-
-## 常见开发场景
-
-### 添加新页面
-
-1. 在 `src/app/` 下创建文件夹和 `page.tsx`
-2. 使用 shadcn 组件构建 UI
-3. 根据需要添加 `layout.tsx` 和 `loading.tsx`
-
-### 创建业务组件
-
-1. 在 `src/components/` 下创建组件文件（非 UI 组件）
-2. 优先组合使用 `src/components/ui/` 中的基础组件
-3. 使用 TypeScript 定义 Props 类型
-
-### 添加全局状态
-
-推荐使用 React Context 或 Zustand：
-
-```tsx
-// src/lib/store.ts
-import { create } from 'zustand';
-
-interface Store {
-  count: number;
-  increment: () => void;
-}
-
-export const useStore = create<Store>((set) => ({
-  count: 0,
-  increment: () => set((state) => ({ count: state.count + 1 })),
-}));
-```
-
-### 集成数据库
-
-推荐使用 Prisma 或 Drizzle ORM，在 `src/lib/db.ts` 中配置。
-
-## 技术栈
-
-- **框架**: Next.js 16.1.1 (App Router)
-- **UI 组件**: shadcn/ui (基于 Radix UI)
-- **样式**: Tailwind CSS v4
-- **表单**: React Hook Form + Zod
-- **图标**: Lucide React
-- **字体**: Geist Sans & Geist Mono
-- **包管理器**: pnpm 9+
-- **TypeScript**: 5.x
-
-## 参考文档
-
-- [Next.js 官方文档](https://nextjs.org/docs)
-- [shadcn/ui 组件文档](https://ui.shadcn.com)
-- [Tailwind CSS 文档](https://tailwindcss.com/docs)
-- [React Hook Form](https://react-hook-form.com)
-
-## 重要提示
-
-1. **必须使用 pnpm** 作为包管理器
-2. **优先使用 shadcn/ui 组件** 而不是从零开发基础组件
-3. **遵循 Next.js App Router 规范**，正确区分服务端/客户端组件
-4. **使用 TypeScript** 进行类型安全开发
-5. **使用 `@/` 路径别名** 导入模块（已配置）
+## WebSocket 协议
+
+### 端点
+
+`ws://<host>:5000/ws/agent`
+
+### Agent → 服务端
+
+| type | 说明 |
+|------|------|
+| `agent:register` | Agent 注册/重连 |
+| `agent:status:update` | 状态更新 |
+| `agent:event` | 上报自定义事件 |
+| `agent:world:snapshot` | 世界快照 |
+| `agent:vision` | 截图上报 |
+| `agent:build:progress` | 建造进度 |
+| `agent:chat` | 聊天消息 |
+| `agent:disconnect` | 主动断开 |
+| `ping` | 心跳 |
+
+### 服务端 → 客户端
+
+| type | 说明 |
+|------|------|
+| `agents:list` | Agent 列表 |
+| `status:update` | 状态更新广播 |
+| `event:new` | 新事件通知 |
+| `world:snapshot` | 世界快照 |
+| `vision:new` | 新截图通知 |
+| `build:progress` | 建造进度更新 |
+| `chat:new` | 新聊天消息 |
+| `admin:data-cleared` | 数据清空通知 |
+| `pong` | 心跳回复 |
+
+> 完整接口文档见 [public/api-docs.md](public/api-docs.md)
+
+## REST API
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/api/agents` | GET | 获取所有 Agent |
+| `/api/agents/[id]` | GET | 获取 Agent 详情 |
+| `/api/agents/[id]/events` | GET | 获取 Agent 事件 |
+| `/api/agents/[id]/snapshots` | GET | 获取世界快照 |
+| `/api/agents/[id]/vision` | GET | 获取截图列表 |
+| `/api/agents/[id]/trajectory` | GET | 获取移动轨迹 |
+| `/api/agents/[id]/builds` | GET | 获取建造记录 |
+| `/api/events` | GET | 获取全局事件 |
+| `/api/messages` | GET | 获取聊天消息 |
+| `/api/stats` | GET | 获取统计数据 |
+| `/api/leaderboard` | GET | 获取排行榜 |
+| `/api/admin/clear-data` | POST | 清空数据 |
+| `/api/vision-proxy` | GET | 截图图片代理 |
+
+## Agent 接入指南
+
+Minecraft Agent 通过 WebSocket 连接到观测台并上报状态：
+
+1. 连接 `ws://<observer-host>:5000/ws/agent`
+2. 发送 `agent:register` 注册（建议使用稳定 agentId）
+3. 定期（2-5秒）发送 `agent:status:update` 更新状态
+4. 可选发送 `agent:vision` 上报截图
+5. 可选发送 `agent:build:progress` 上报建造进度
+6. 可选发送 `agent:chat` 上报聊天消息
+7. 可选发送 `agent:world:snapshot` 更新周围环境
+
+> 详细接入示例和字段说明见 [public/api-docs.md](public/api-docs.md)
+
+## 数据保留策略
+
+| 数据类型 | 保留条数 |
+|----------|---------|
+| 事件 | 200 条/Agent |
+| 世界快照 | 30 条/Agent |
+| 截图 | 50 张/Agent |
+| 聊天消息 | 100 条/Agent |
+| 状态更新 | 1000 条/Agent |
+| 建造记录 | 20 条/Agent |
+
+## License
+
+MIT
