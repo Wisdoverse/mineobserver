@@ -1,198 +1,246 @@
-# MineWorld
+<div align="center">
 
-**Minecraft Agent 实时观测平台** — 监控、追踪与可视化你的 Minecraft AI Agent 行为。
+# ⛏️ MineWorld
 
-**入口页面** — 像素风 Minecraft 场景引导页，展示在线 Agent 数量与接入地址
+**Real-Time Minecraft Agent Observation Platform**
 
-![MineWorld Landing](public/mineworld-preview-landing.png)
+Monitor, track, and visualize your Minecraft AI agents — all in one place.
 
-**监控面板** — 多 Agent 卡片矩阵 + 背包/地图/日志 + 服务器概览 + 排行榜 + 聊天
+[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineworld-181717?logo=github)](https://github.com/Wisdoverse/mineworld)
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-![MineWorld Dashboard](public/mineworld-preview-dashboard.png)
+**English** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
-## 功能概览
+</div>
 
-- **实时状态监控** — 监控 Agent 位置、生命值、饥饿值、游戏模式等核心指标
-- **背包可视化** — 展示 Agent 的装备栏、热键栏和主背包内容
-- **小地图** — 显示 Agent 周围的方块和实体分布
-- **截图画廊** — 实时查看 Agent 上报的游戏截图
-- **建造进度** — 追踪 Agent 的建筑项目完成情况
-- **聊天窗口** — 展示公共/团队/私聊频道的实时消息
-- **事件日志** — 记录 Agent 的所有操作事件（移动、破坏方块、拾取物品等）
-- **多 Agent 支持** — 同时监控多个 Agent 的状态与行为
-- **统计排行** — 展示 Agent 的统计数据与排行榜
+---
 
-## 技术栈
+## 🖼️ Screenshots
 
-| 类别 | 技术 |
-|------|------|
-| 框架 | Next.js 16 (App Router) |
-| 核心 | React 19 |
-| 语言 | TypeScript 5 |
-| UI 组件 | shadcn/ui (Radix UI) |
-| 样式 | Tailwind CSS 4 |
-| 实时通信 | WebSocket (ws) |
-| 数据库 | Supabase (PostgreSQL) |
-| 对象存储 | S3 兼容存储 (coze-coding-dev-sdk) |
+**Landing Page** — Pixel-art Minecraft scene with live agent count and connection endpoint
 
-## 快速开始
+![Landing Page](public/mineworld-preview-landing.png)
 
-### 环境要求
+**Dashboard** — Multi-agent card matrix · Inventory / Map / Log · Server overview · Leaderboard · Chat
 
-- Node.js 20+
-- pnpm 9+
+![Dashboard](public/mineworld-preview-dashboard.png)
 
-### 安装依赖
+---
+
+## ✨ Features
+
+| Category | Details |
+|----------|---------|
+| **Live Status** | Position, health, hunger, game mode, dimension — all in real-time |
+| **Inventory Viz** | Equipment slots, hotbar, and main backpack at a glance |
+| **Mini Map** | Block & entity distribution around the agent |
+| **Vision Gallery** | Screenshots uploaded by agents, stored in object storage |
+| **Build Progress** | Track construction blueprints and completion percentage |
+| **Chat Window** | Public / team / whisper / system channels |
+| **Event Log** | Every agent action — movement, block breaks, item pickups, etc. |
+| **Multi-Agent** | Observe multiple agents simultaneously |
+| **Stats & Leaderboard** | Aggregated statistics with sortable ranking dimensions |
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 (App Router) |
+| UI | React 19 + shadcn/ui (Radix) + Tailwind CSS 4 |
+| Language | TypeScript 5 (strict) |
+| Realtime | WebSocket (`ws` library) |
+| Database | Supabase (PostgreSQL) |
+| Object Storage | S3-compatible storage |
+| Build | tsup · pnpm |
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js** ≥ 20
+- **pnpm** ≥ 9
+
+### Install & Run
 
 ```bash
+# Install dependencies
 pnpm install
-```
 
-### 启动开发服务器
-
-```bash
+# Start development server (http://localhost:5000)
 pnpm dev
-```
 
-启动后打开 [http://localhost:5000](http://localhost:5000) 查看应用。
-
-### 构建生产版本
-
-```bash
+# Build for production
 pnpm build
-```
 
-### 启动生产服务器
-
-```bash
+# Start production server
 pnpm start
 ```
 
-## 项目结构
+---
+
+## 📁 Project Structure
 
 ```
-├── public/                 # 静态资源 & API 文档
-│   └── api-docs.md         # 完整接口文档
-├── scripts/                # 构建与启动脚本
-│   ├── build.sh
-│   ├── dev.sh
-│   └── start.sh
-├── src/
-│   ├── app/                # Next.js App Router
-│   │   ├── page.tsx        # 主页面
-│   │   ├── layout.tsx      # 根布局
-│   │   └── api/            # REST API 端点
-│   ├── components/
-│   │   ├── ui/             # shadcn/ui 组件库
-│   │   └── agent/          # Agent 观测组件
-│   │       ├── agent-card.tsx       # Agent 状态卡片
-│   │       ├── inventory-grid.tsx   # 背包网格
-│   │       ├── mini-map.tsx        # 小地图
-│   │       ├── vision-gallery.tsx   # 截图画廊
-│   │       ├── build-progress.tsx   # 建造进度
-│   │       ├── chat-window.tsx      # 聊天窗口
-│   │       ├── team-panel.tsx       # 团队面板
-│   │       └── stats-leaderboard.tsx # 统计排行
-│   ├── hooks/
-│   │   ├── use-agent-observer.ts    # Observer WebSocket Hook
-│   │   └── use-demo-agent.tsx       # Demo Agent Hook
-│   ├── lib/
-│   │   ├── utils.ts
-│   │   ├── types/agent.ts           # 类型定义
-│   │   └── ws-client.ts            # WebSocket 客户端
-│   ├── storage/
-│   │   ├── database/
-│   │   │   ├── agent-db.ts          # 数据库操作层
-│   │   │   └── supabase-client.ts   # Supabase 客户端
-│   │   └── vision-storage.ts        # 截图对象存储
-│   ├── ws-handlers/
-│   │   ├── agent.ts                 # WebSocket 消息处理器
-│   │   └── agent-state.ts           # Agent 状态管理器
-│   └── server.ts                    # 自定义服务端入口
-├── next.config.ts
-├── package.json
-└── tsconfig.json
+src/
+├── app/                        # Next.js App Router
+│   ├── page.tsx               # Main observation dashboard
+│   ├── layout.tsx             # Root layout
+│   └── api/                   # 13 REST API endpoints
+├── components/
+│   ├── ui/                    # shadcn/ui base components
+│   └── agent/                 # Domain components
+│       ├── agent-card.tsx             # Agent status card
+│       ├── inventory-grid.tsx         # Inventory grid
+│       ├── mini-map.tsx               # Mini map
+│       ├── vision-gallery.tsx         # Screenshot gallery
+│       ├── build-progress.tsx         # Build progress tracker
+│       ├── chat-window.tsx            # Chat window
+│       ├── team-panel.tsx             # Team panel
+│       └── stats-leaderboard.tsx      # Stats & leaderboard
+├── hooks/
+│   ├── use-agent-observer.ts          # Observer WebSocket hook
+│   └── use-demo-agent.tsx             # Demo agent generator
+├── lib/
+│   ├── types/agent.ts                 # TypeScript type definitions
+│   ├── ws-client.ts                   # WebSocket client utility
+│   └── utils.ts                       # Shared utilities (cn, etc.)
+├── storage/
+│   ├── database/agent-db.ts           # Database operations
+│   ├── database/supabase-client.ts    # Supabase client
+│   └── vision-storage.ts              # Vision image upload & URL
+├── ws-handlers/
+│   ├── agent.ts                       # WebSocket message handler
+│   └── agent-state.ts                 # Agent state manager
+└── server.ts                          # Custom HTTP + WS server entry
 ```
 
-## WebSocket 协议
+---
 
-### 端点
+## 📡 WebSocket Protocol
 
-`ws://<host>:5000/ws/agent`
+**Endpoint:** `ws://<host>:5000/ws/agent`
 
-### Agent → 服务端
+### Agent → Server
 
-| type | 说明 |
-|------|------|
-| `agent:register` | Agent 注册/重连 |
-| `agent:status:update` | 状态更新 |
-| `agent:event` | 上报自定义事件 |
-| `agent:world:snapshot` | 世界快照 |
-| `agent:vision` | 截图上报 |
-| `agent:build:progress` | 建造进度 |
-| `agent:chat` | 聊天消息 |
-| `agent:disconnect` | 主动断开 |
-| `ping` | 心跳 |
+| Message Type | Description |
+|-------------|-------------|
+| `agent:register` | Register or reconnect an agent |
+| `agent:status:update` | Push status update (partial OK) |
+| `agent:event` | Report a custom event |
+| `agent:world:snapshot` | Push world snapshot |
+| `agent:vision` | Upload a screenshot |
+| `agent:build:progress` | Update build progress |
+| `agent:chat` | Send a chat message |
+| `agent:disconnect` | Graceful disconnect |
+| `ping` | Heartbeat |
 
-### 服务端 → 客户端
+### Server → Client
 
-| type | 说明 |
-|------|------|
-| `agents:list` | Agent 列表 |
-| `status:update` | 状态更新广播 |
-| `event:new` | 新事件通知 |
-| `world:snapshot` | 世界快照 |
-| `vision:new` | 新截图通知 |
-| `build:progress` | 建造进度更新 |
-| `chat:new` | 新聊天消息 |
-| `admin:data-cleared` | 数据清空通知 |
-| `pong` | 心跳回复 |
+| Message Type | Description |
+|-------------|-------------|
+| `agents:list` | Full agent list (on observer register) |
+| `status:update` | Broadcast status change |
+| `event:new` | New event notification |
+| `world:snapshot` | World snapshot broadcast |
+| `vision:new` | New screenshot notification |
+| `build:progress` | Build progress update |
+| `chat:new` | New chat message |
+| `admin:data-cleared` | Data purge notification |
+| `pong` | Heartbeat reply |
 
-> 完整接口文档见 [public/api-docs.md](public/api-docs.md)
+> 📖 Full protocol specification: [public/api-docs.md](public/api-docs.md)
 
-## REST API
+---
 
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/agents` | GET | 获取所有 Agent |
-| `/api/agents/[id]` | GET | 获取 Agent 详情 |
-| `/api/agents/[id]/events` | GET | 获取 Agent 事件 |
-| `/api/agents/[id]/snapshots` | GET | 获取世界快照 |
-| `/api/agents/[id]/vision` | GET | 获取截图列表 |
-| `/api/agents/[id]/trajectory` | GET | 获取移动轨迹 |
-| `/api/agents/[id]/builds` | GET | 获取建造记录 |
-| `/api/events` | GET | 获取全局事件 |
-| `/api/messages` | GET | 获取聊天消息 |
-| `/api/stats` | GET | 获取统计数据 |
-| `/api/leaderboard` | GET | 获取排行榜 |
-| `/api/admin/clear-data` | POST | 清空数据 |
-| `/api/vision-proxy` | GET | 截图图片代理 |
+## 🔌 REST API
 
-## Agent 接入指南
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/agents` | GET | List all agents |
+| `/api/agents/[id]` | GET | Agent detail + recent events |
+| `/api/agents/[id]/events` | GET | Agent events (paginated) |
+| `/api/agents/[id]/snapshots` | GET | World snapshots |
+| `/api/agents/[id]/vision` | GET | Screenshot list |
+| `/api/agents/[id]/trajectory` | GET | Movement trajectory |
+| `/api/agents/[id]/builds` | GET | Build records |
+| `/api/events` | GET | Global event stream |
+| `/api/messages` | GET | Chat messages |
+| `/api/stats` | GET | Platform statistics |
+| `/api/leaderboard` | GET | Agent leaderboard |
+| `/api/admin/clear-data` | POST | Purge data (events / all) |
+| `/api/vision-proxy` | GET | Image proxy (bypass signed-URL expiry) |
 
-Minecraft Agent 通过 WebSocket 连接到观测台并上报状态：
+---
 
-1. 连接 `ws://<observer-host>:5000/ws/agent`
-2. 发送 `agent:register` 注册（建议使用稳定 agentId）
-3. 定期（2-5秒）发送 `agent:status:update` 更新状态
-4. 可选发送 `agent:vision` 上报截图
-5. 可选发送 `agent:build:progress` 上报建造进度
-6. 可选发送 `agent:chat` 上报聊天消息
-7. 可选发送 `agent:world:snapshot` 更新周围环境
+## 🤖 Agent Integration Guide
 
-> 详细接入示例和字段说明见 [public/api-docs.md](public/api-docs.md)
+Connect your Minecraft bot to MineWorld in 4 steps:
 
-## 数据保留策略
+```
+1.  Connect        →  ws://<host>:5000/ws/agent
+2.  Register       →  { type: "agent:register", payload: { agentId, username, ... } }
+3.  Push Status    →  { type: "agent:status:update", payload: { agentId, status: {...} } }
+4.  (Optional)     →  agent:vision · agent:build:progress · agent:chat · agent:world:snapshot
+```
 
-| 数据类型 | 保留条数 |
-|----------|---------|
-| 事件 | 200 条/Agent |
-| 世界快照 | 30 条/Agent |
-| 截图 | 50 张/Agent |
-| 聊天消息 | 100 条/Agent |
-| 状态更新 | 1000 条/Agent |
-| 建造记录 | 20 条/Agent |
+**Tips:**
+- Use a **stable `agentId`** to enable reconnect without data loss
+- Send status updates every **2–5 seconds**
+- Upload vision captures as **base64-encoded PNG**
+- On disconnect, send `agent:disconnect` or just close the socket — offline status is preserved
 
-## License
+> 📖 Complete field reference & examples: [public/api-docs.md](public/api-docs.md)
 
-MIT
+---
+
+## 🗄️ Data Retention
+
+| Data Type | Retention Limit (per Agent) |
+|-----------|---------------------------|
+| Events | 200 |
+| World Snapshots | 30 |
+| Vision Captures | 50 |
+| Chat Messages | 100 |
+| Status Updates | 1 000 |
+| Build Records | 20 |
+
+Older records are automatically pruned via a sliding-window strategy with throttled cleanup.
+
+---
+
+## 🏗️ Architecture
+
+```
+┌──────────────┐      WebSocket       ┌──────────────────┐
+│  Minecraft   │ ◄──────────────────► │   MineWorld      │
+│  Agent(s)    │   ws://host/ws/agent │   Server         │
+└──────────────┘                      │                  │
+                                      │  ┌────────────┐  │
+┌──────────────┐      WebSocket       │  │  State     │  │
+│  Observer    │ ◄──────────────────► │  │  Manager   │  │
+│  (Browser)   │   auto-connect       │  └────────────┘  │
+└──────────────┘                      │                  │
+                                      │  ┌────────────┐  │
+                                      │  │  Supabase  │  │
+                                      │  │  (Postgres)│  │
+                                      │  └────────────┘  │
+                                      │                  │
+                                      │  ┌────────────┐  │
+                                      │  │  S3 Object │  │
+                                      │  │  Storage   │  │
+                                      │  └────────────┘  │
+                                      └──────────────────┘
+```
+
+---
+
+## 📜 License
+
+This project is licensed under the [MIT License](LICENSE).
