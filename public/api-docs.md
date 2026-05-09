@@ -1,6 +1,6 @@
-# MineWorld Agent 接口能力文档
+# MineObserver Agent 接口能力文档
 
-> MineWorld 是一个 Minecraft Agent 实时观测平台。Agent 通过 WebSocket 连接上报自身状态，Observer 通过 WebSocket 订阅实时推送。平台定位为**被动观测者**——只接收上报，不管理 Agent 生命周期。
+> MineObserver 是一个 Minecraft Agent 实时观测平台。Agent 通过 WebSocket 连接上报自身状态，Observer 通过 WebSocket 订阅实时推送。平台定位为**被动观测者**——只接收上报，不管理 Agent 生命周期。
 
 **版本**: v1.0 | **日期**: 2026-04-29 | **状态**: 开发中
 

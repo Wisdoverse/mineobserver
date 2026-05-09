@@ -1,12 +1,12 @@
 <div align="center">
 
-# ⛏️ MineWorld
+# ⛏️ MineObserver
 
 **Minecraft Agent 实时观测平台**
 
 监控、追踪与可视化你的 Minecraft AI Agent —— 一站式全览。
 
-[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineworld-181717?logo=github)](https://github.com/Wisdoverse/mineworld)
+[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineobserver-181717?logo=github)](https://github.com/Wisdoverse/mineobserver)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
@@ -22,11 +22,11 @@
 
 **入口页面** — 像素风 Minecraft 场景引导页，实时展示在线 Agent 数量与接入地址
 
-![入口页面](public/mineworld-preview-landing.png)
+![入口页面](public/mineobserver-preview-landing.png)
 
 **监控面板** — 多 Agent 卡片矩阵 · 背包/地图/日志 · 服务器概览 · 排行榜 · 聊天
 
-![监控面板](public/mineworld-preview-dashboard.png)
+![监控面板](public/mineobserver-preview-dashboard.png)
 
 ---
 
@@ -181,7 +181,7 @@ src/
 
 ## 🤖 Agent 接入指南
 
-4 步将你的 Minecraft Bot 接入 MineWorld：
+4 步将你的 Minecraft Bot 接入 MineObserver：
 
 ```
 1.  连接        →  ws://<host>:5000/ws/agent
@@ -219,7 +219,7 @@ src/
 
 ```
 ┌──────────────┐      WebSocket       ┌──────────────────┐
-│  Minecraft   │ ◄──────────────────► │   MineWorld      │
+│  Minecraft   │ ◄──────────────────► │   MineObserver      │
 │  Agent(s)    │   ws://host/ws/agent │   Server         │
 └──────────────┘                      │                  │
                                       │  ┌────────────┐  │

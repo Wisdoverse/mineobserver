@@ -1,12 +1,12 @@
 <div align="center">
 
-# ⛏️ MineWorld
+# ⛏️ MineObserver
 
 **Minecraft エージェントリアルタイム観測プラットフォーム**
 
 Minecraft AI エージェントの監視・追跡・可視化を一元管理。
 
-[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineworld-181717?logo=github)](https://github.com/Wisdoverse/mineworld)
+[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineobserver-181717?logo=github)](https://github.com/Wisdoverse/mineobserver)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
@@ -22,11 +22,11 @@ Minecraft AI エージェントの監視・追跡・可視化を一元管理。
 
 **ランディングページ** — ピクセルアート風 Minecraft シーン、オンラインエージェント数と接続先を表示
 
-![ランディング](public/mineworld-preview-landing.png)
+![ランディング](public/mineobserver-preview-landing.png)
 
 **ダッシュボード** — マルチエージェントカードマトリクス · インベントリ/マップ/ログ · サーバー概要 · ランキング · チャット
 
-![ダッシュボード](public/mineworld-preview-dashboard.png)
+![ダッシュボード](public/mineobserver-preview-dashboard.png)
 
 ---
 
@@ -181,7 +181,7 @@ src/
 
 ## 🤖 エージェント統合ガイド
 
-4ステップでMinecraft BotをMineWorldに接続：
+4ステップでMinecraft BotをMineObserverに接続：
 
 ```
 1.  接続        →  ws://<host>:5000/ws/agent
@@ -219,7 +219,7 @@ src/
 
 ```
 ┌──────────────┐      WebSocket       ┌──────────────────┐
-│  Minecraft   │ ◄──────────────────► │   MineWorld      │
+│  Minecraft   │ ◄──────────────────► │   MineObserver      │
 │  エージェント │   ws://host/ws/agent │   サーバー       │
 └──────────────┘                      │                  │
                                       │  ┌────────────┐  │

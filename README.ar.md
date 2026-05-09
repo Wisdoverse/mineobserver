@@ -1,12 +1,12 @@
 <div dir="rtl" align="center">
 
-# ⛏️ MineWorld
+# ⛏️ MineObserver
 
 **منصة مراقبة وكلاء ماينكرافت في الوقت الفعلي**
 
 راقب وتتبع وتصوّر سلوك وكلاء الذكاء الاصطناعي في ماينكرافت — كل ذلك في مكان واحد.
 
-[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineworld-181717?logo=github)](https://github.com/Wisdoverse/mineworld)
+[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineobserver-181717?logo=github)](https://github.com/Wisdoverse/mineobserver)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
@@ -24,11 +24,11 @@
 
 **صفحة الترحيب** — مشهد ماينكرافت بكسلي مع عدد الوكلاء المتصلين ونقطة الاتصال
 
-![صفحة الترحيب](public/mineworld-preview-landing.png)
+![صفحة الترحيب](public/mineobserver-preview-landing.png)
 
 **لوحة المراقبة** — مصفوفة متعددة الوكلاء · المخزون / الخريطة / السجل · نظرة عامة على الخادم · الترتيب · الدردشة
 
-![لوحة المراقبة](public/mineworld-preview-dashboard.png)
+![لوحة المراقبة](public/mineobserver-preview-dashboard.png)
 
 ---
 
@@ -183,7 +183,7 @@ src/
 
 ## 🤖 دليل دمج الوكيل
 
-وصّل بوت ماينكرافت الخاص بك بـ MineWorld في 4 خطوات:
+وصّل بوت ماينكرافت الخاص بك بـ MineObserver في 4 خطوات:
 
 ```
 1.  الاتصال       →  ws://<host>:5000/ws/agent
@@ -221,7 +221,7 @@ src/
 
 ```
 ┌──────────────┐      WebSocket       ┌──────────────────┐
-│  ماينكرافت   │ ◄──────────────────► │   MineWorld      │
+│  ماينكرافت   │ ◄──────────────────► │   MineObserver      │
 │  الوكيل(اء)  │   ws://host/ws/agent │   الخادم         │
 └──────────────┘                      │                  │
                                       │  ┌────────────┐  │

@@ -80,7 +80,7 @@
 
 ---
 
-# MineWorld
+# MineObserver
 
 本项目是一个用于实时观测 Minecraft Agent 行为的网页应用。
 

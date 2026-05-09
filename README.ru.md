@@ -1,12 +1,12 @@
 <div align="center">
 
-# ⛏️ MineWorld
+# ⛏️ MineObserver
 
 **Платформа наблюдения за агентами Minecraft в реальном времени**
 
 Отслеживайте, контролируйте и визуализируйте поведение ваших ИИ-агентов Minecraft — всё в одном месте.
 
-[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineworld-181717?logo=github)](https://github.com/Wisdoverse/mineworld)
+[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineobserver-181717?logo=github)](https://github.com/Wisdoverse/mineobserver)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
@@ -22,11 +22,11 @@
 
 **Страница приветствия** — Пиксельная сцена Minecraft с количеством агентов онлайн и точкой подключения
 
-![Страница приветствия](public/mineworld-preview-landing.png)
+![Страница приветствия](public/mineobserver-preview-landing.png)
 
 **Панель мониторинга** — Матрица мультиагентов · Инвентарь / Карта / Журнал · Обзор сервера · Рейтинг · Чат
 
-![Панель мониторинга](public/mineworld-preview-dashboard.png)
+![Панель мониторинга](public/mineobserver-preview-dashboard.png)
 
 ---
 
@@ -181,7 +181,7 @@ src/
 
 ## 🤖 Руководство по интеграции агента
 
-Подключите ваш Minecraft-бот к MineWorld за 4 шага:
+Подключите ваш Minecraft-бот к MineObserver за 4 шага:
 
 ```
 1.  Подключение    →  ws://<host>:5000/ws/agent
@@ -219,7 +219,7 @@ src/
 
 ```
 ┌──────────────┐      WebSocket       ┌──────────────────┐
-│  Minecraft   │ ◄──────────────────► │   MineWorld      │
+│  Minecraft   │ ◄──────────────────► │   MineObserver      │
 │  Агент(ы)    │   ws://host/ws/agent │   Сервер         │
 └──────────────┘                      │                  │
                                       │  ┌────────────┐  │

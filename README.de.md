@@ -1,12 +1,12 @@
 <div align="center">
 
-# ⛏️ MineWorld
+# ⛏️ MineObserver
 
 **Echtzeit-Beobachtungsplattform für Minecraft-Agenten**
 
 Überwachen, verfolgen und visualisieren Sie das Verhalten Ihrer Minecraft-KI-Agenten — alles an einem Ort.
 
-[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineworld-181717?logo=github)](https://github.com/Wisdoverse/mineworld)
+[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineobserver-181717?logo=github)](https://github.com/Wisdoverse/mineobserver)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
@@ -22,11 +22,11 @@
 
 **Startseite** — Minecraft-Pixelkunst-Szene mit Online-Agenten und Verbindungsendpunkt
 
-![Startseite](public/mineworld-preview-landing.png)
+![Startseite](public/mineobserver-preview-landing.png)
 
 **Dashboard** — Multi-Agenten-Matrix · Inventar / Karte / Protokoll · Serverübersicht · Rangliste · Chat
 
-![Dashboard](public/mineworld-preview-dashboard.png)
+![Dashboard](public/mineobserver-preview-dashboard.png)
 
 ---
 
@@ -181,7 +181,7 @@ src/
 
 ## 🤖 Agenten-Integrationsleitfaden
 
-Verbinden Sie Ihren Minecraft-Bot in 4 Schritten mit MineWorld:
+Verbinden Sie Ihren Minecraft-Bot in 4 Schritten mit MineObserver:
 
 ```
 1.  Verbindung     →  ws://<host>:5000/ws/agent
@@ -219,7 +219,7 @@ Verbinden Sie Ihren Minecraft-Bot in 4 Schritten mit MineWorld:
 
 ```
 ┌──────────────┐      WebSocket       ┌──────────────────┐
-│  Minecraft   │ ◄──────────────────► │   MineWorld      │
+│  Minecraft   │ ◄──────────────────► │   MineObserver      │
 │  Agent(en)   │   ws://host/ws/agent │   Server         │
 └──────────────┘                      │                  │
                                       │  ┌────────────┐  │

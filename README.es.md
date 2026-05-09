@@ -1,12 +1,12 @@
 <div align="center">
 
-# ⛏️ MineWorld
+# ⛏️ MineObserver
 
 **Plataforma de observación en tiempo real de agentes Minecraft**
 
 Monitorea, rastrea y visualiza el comportamiento de tus agentes IA de Minecraft — todo en un solo lugar.
 
-[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineworld-181717?logo=github)](https://github.com/Wisdoverse/mineworld)
+[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineobserver-181717?logo=github)](https://github.com/Wisdoverse/mineobserver)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
@@ -22,11 +22,11 @@ Monitorea, rastrea y visualiza el comportamiento de tus agentes IA de Minecraft 
 
 **Página de inicio** — Escena pixelada de Minecraft con agentes en línea y punto de conexión
 
-![Página de inicio](public/mineworld-preview-landing.png)
+![Página de inicio](public/mineobserver-preview-landing.png)
 
 **Panel de monitoreo** — Matriz multi-agente · Inventario / Mapa / Registro · Resumen del servidor · Ranking · Chat
 
-![Panel de monitoreo](public/mineworld-preview-dashboard.png)
+![Panel de monitoreo](public/mineobserver-preview-dashboard.png)
 
 ---
 
@@ -181,7 +181,7 @@ src/
 
 ## 🤖 Guía de integración del agente
 
-Conecta tu bot de Minecraft a MineWorld en 4 pasos:
+Conecta tu bot de Minecraft a MineObserver en 4 pasos:
 
 ```
 1.  Conexión       →  ws://<host>:5000/ws/agent
@@ -219,7 +219,7 @@ Los registros más antiguos se eliminan automáticamente mediante una estrategia
 
 ```
 ┌──────────────┐      WebSocket       ┌──────────────────┐
-│  Minecraft   │ ◄──────────────────► │   MineWorld      │
+│  Minecraft   │ ◄──────────────────► │   MineObserver      │
 │  Agente(s)   │   ws://host/ws/agent │   Servidor       │
 └──────────────┘                      │                  │
                                       │  ┌────────────┐  │

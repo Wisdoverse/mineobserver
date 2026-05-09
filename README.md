@@ -1,12 +1,12 @@
 <div align="center">
 
-# ⛏️ MineWorld
+# ⛏️ MineObserver
 
 **Real-Time Minecraft Agent Observation Platform**
 
 Monitor, track, and visualize your Minecraft AI agents — all in one place.
 
-[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineworld-181717?logo=github)](https://github.com/Wisdoverse/mineworld)
+[![GitHub](https://img.shields.io/badge/GitHub-Wisdoverse%2Fmineobserver-181717?logo=github)](https://github.com/Wisdoverse/mineobserver)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
@@ -22,11 +22,11 @@ Monitor, track, and visualize your Minecraft AI agents — all in one place.
 
 **Landing Page** — Pixel-art Minecraft scene with live agent count and connection endpoint
 
-![Landing Page](public/mineworld-preview-landing.png)
+![Landing Page](public/mineobserver-preview-landing.png)
 
 **Dashboard** — Multi-agent card matrix · Inventory / Map / Log · Server overview · Leaderboard · Chat
 
-![Dashboard](public/mineworld-preview-dashboard.png)
+![Dashboard](public/mineobserver-preview-dashboard.png)
 
 ---
 
@@ -181,7 +181,7 @@ src/
 
 ## 🤖 Agent Integration Guide
 
-Connect your Minecraft bot to MineWorld in 4 steps:
+Connect your Minecraft bot to MineObserver in 4 steps:
 
 ```
 1.  Connect        →  ws://<host>:5000/ws/agent
@@ -219,7 +219,7 @@ Older records are automatically pruned via a sliding-window strategy with thrott
 
 ```
 ┌──────────────┐      WebSocket       ┌──────────────────┐
-│  Minecraft   │ ◄──────────────────► │   MineWorld      │
+│  Minecraft   │ ◄──────────────────► │   MineObserver      │
 │  Agent(s)    │   ws://host/ws/agent │   Server         │
 └──────────────┘                      │                  │
                                       │  ┌────────────┐  │

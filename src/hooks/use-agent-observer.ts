@@ -203,7 +203,7 @@ export function useAgentObserver(): UseAgentObserverReturn {
         setChatMessages([]);
         setTeams(new Map());
         try {
-          localStorage.removeItem('mineworld-demo-agents');
+          localStorage.removeItem('mineobserver-demo-agents');
         } catch {
           // ignore
         }
